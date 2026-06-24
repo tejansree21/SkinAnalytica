@@ -46,13 +46,16 @@ ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:8001",
     "http://127.0.0.1:8001",
-    # Vercel deployments
+    # Vercel — all variants
     "https://skinanalytica.vercel.app",
-    "https://*.vercel.app",
+    "https://skin-analytica.vercel.app",
+    "https://skinanalytica-git-main-tejansree21.vercel.app",
     # HuggingFace Spaces
-    "https://*.hf.space",
+    "https://tejansree-neuroscope-ai.hf.space",
     # Render services
-    "https://*.onrender.com",
+    "https://skinanalytica-api.onrender.com",
+    "https://skinanalytica-assistant.onrender.com",
+    "https://skinanalytica-delivery.onrender.com",
 ]
 # Add custom domain if set
 if os.environ.get("SKINANALYTICA_FRONTEND_URL"):
@@ -70,6 +73,7 @@ app = FastAPI(
 
 app.add_middleware(CORSMiddleware,
     allow_origins     = ALLOWED_ORIGINS,
+    allow_origin_regex= r"https://.*\.vercel\.app|https://.*\.hf\.space",
     allow_credentials = True,
     allow_methods     = ["GET", "POST", "OPTIONS", "PATCH"],
     allow_headers     = ["*"],
