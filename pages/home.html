@@ -4,6 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SkinAnalytica — ISIC Dermoscopy Intelligence</title>
+<script>
+// Inline env config fallback for iframe context
+if (!window.SA_CONFIG) {
+  const h = window.location.hostname;
+  const local = h === 'localhost' || h === '127.0.0.1' || h === '';
+  window.SA_CONFIG = {
+    API_BASE:       local ? 'http://localhost:8001' : 'https://skinanalytica-api.onrender.com',
+    ASSISTANT_BASE: local ? 'http://localhost:8002' : 'https://skinanalytica-assistant.onrender.com',
+    DELIVERY_BASE:  local ? 'http://localhost:8003' : 'https://skinanalytica-delivery.onrender.com',
+    ENV: local ? 'local' : 'production'
+  };
+}
+// Also check parent frame
+const _SA = window.parent?.SA_CONFIG || window.SA_CONFIG;
+window.SA_CONFIG = _SA;
+</script>
 <style>
   :root {
     --bg:       #080808;
