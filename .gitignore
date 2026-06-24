@@ -17,3 +17,4 @@ __pycache__/
 *.egg-info/
 .DS_Store
 "@ | Out-File -Encoding utf8 .gitignore
+hf_env_vars.txt
