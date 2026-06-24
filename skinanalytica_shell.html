@@ -258,26 +258,59 @@ function navigate(page) {
 
 // ── API health check ──────────────────────────────────
 async function checkApi() {
-  const pill = document.getElementById('api-pill');
-  const txt  = document.getElementById('api-text');
+  const pill   = document.getElementById('api-pill');
+  const txt    = document.getElementById('api-text');
+  const base   = window.SA_CONFIG?.API_BASE || 'http://localhost:8001';
+  const isRender = base.includes('onrender.com');
+
+  // Show waking state immediately for Render
+  pill.className = 'api-dot';
+  txt.textContent = isRender ? 'waking...' : 'checking...';
+
+  // Try with long timeout for Render cold start
+  const timeout = isRender ? 65000 : 5000;
+
   try {
-    const res  = await fetch((window.SA_CONFIG?.API_BASE || 'http://localhost:8001') + '/health',
-                             { signal: AbortSignal.timeout(15000) });
+    const res  = await fetch(base + '/health', { signal: AbortSignal.timeout(timeout) });
     const data = await res.json();
     if (data.status === 'ok') {
       pill.className = 'api-dot live';
-      txt.textContent= `v${data.version} live`;
-      // Broadcast to iframes
-      window.apiStatus = { live:true, version:data.version, model:data.model };
+      txt.textContent = `v${data.version} live`;
+      window.apiStatus = { live:true, version:data.version, model:data.model_name };
+      // Notify iframes
+      try { document.getElementById('page-frame').contentWindow.postMessage({type:'api-live',base}, '*'); } catch{}
       return;
     }
-  } catch {}
+  } catch(e) {
+    console.log('Health check failed:', e.message);
+  }
   pill.className = 'api-dot';
-  txt.textContent= 'offline';
+  txt.textContent = isRender ? 'sleeping (click to wake)' : 'offline';
   window.apiStatus = { live:false };
 }
+
+// Wake Render on click
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('api-pill').addEventListener('click', () => {
+    const base = window.SA_CONFIG?.API_BASE || 'http://localhost:8001';
+    if(base.includes('onrender.com')) {
+      document.getElementById('api-text').textContent = 'waking...';
+      // Fire a request to wake it up, then recheck
+      fetch(base + '/health').catch(()=>{});
+      setTimeout(checkApi, 5000);
+    }
+  });
+});
 checkApi();
 setInterval(checkApi, 30000);
+// Keep Render awake every 10 min while page is open
+setInterval(() => {
+  const base = window.SA_CONFIG?.API_BASE || '';
+  if(base.includes('onrender.com')) {
+    fetch(base + '/health').catch(()=>{});
+  }
+}, 10 * 60 * 1000);
+
 
 // ── Global toast (callable from iframes) ─────────────
 window.showToast = function(title, body, duration=4000) {
