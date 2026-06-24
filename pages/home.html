@@ -785,7 +785,7 @@
 <div class="api-banner">
   <div class="api-status-bar" id="api-status-bar">
     <span class="status-dot"></span>
-    <span id="api-status-text">Connecting to SkinAnalytica API on localhost:8001...</span>
+    <span id="api-status-text">Connecting to SkinAnalytica API...</span>
   </div>
 </div>
 
@@ -935,9 +935,9 @@
 <footer>
   <p>© 2026 SkinAnalytica · NCI Ireland · For research use only — not a medical device</p>
   <div class="footer-links">
-    <a href="http://localhost:8001/docs" target="_blank">API Docs</a>
-    <a href="http://localhost:8002/docs" target="_blank">Assistant</a>
-    <a href="http://localhost:8003/docs" target="_blank">Delivery</a>
+    <a href="https://skinanalytica-api.onrender.com/docs" target="_blank">API Docs</a>
+    <a href="https://skinanalytica-assistant.onrender.com/docs" target="_blank">Assistant</a>
+    <a href="https://skinanalytica-delivery.onrender.com/docs" target="_blank">Delivery</a>
     <a href="#">ISIC Archive</a>
   </div>
 </footer>
@@ -965,7 +965,7 @@
 </div>
 
 <script>
-const API_BASE = 'http://localhost:8001';
+const API_BASE = window.parent?.SA_CONFIG?.API_BASE || 'https://skinanalytica-api.onrender.com';
 let apiLive    = false;
 let uploadedFile = null;
 
@@ -976,7 +976,7 @@ async function checkApi() {
   const pill = document.getElementById('api-pill');
   const pt   = document.getElementById('api-pill-text');
   try {
-    const res  = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+    const res  = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(15000) });
     const data = await res.json();
     if (data.status === 'ok') {
       apiLive = true;
@@ -987,7 +987,7 @@ async function checkApi() {
     }
   } catch {
     bar.className  = 'api-status-bar error';
-    txt.textContent= 'API offline — start SA05_api.py on :8001 to enable real analysis. Demo mode active.';
+    txt.textContent= 'API waking up — this may take 30-60 seconds on first load...';
     pill.className = 'api-dot';
     pt.textContent = 'Demo mode';
   }
