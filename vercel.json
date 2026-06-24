@@ -1,16 +1,12 @@
 {
   "version": 2,
   "name": "skinanalytica",
-  "buildCommand": "",
-  "outputDirectory": ".",
-  "framework": null,
   "routes": [
-    { "src": "/",              "dest": "/index.html" },
-    { "src": "/docs",          "dest": "/skinanalytica_docs.html" },
-    { "src": "/pages/(.*)",    "dest": "/pages/$1" },
-    { "src": "/(.*\\.html)",   "dest": "/$1" },
-    { "src": "/(.*\\.js)",     "dest": "/$1" },
-    { "src": "/(.*\\.css)",    "dest": "/$1" },
-    { "src": "/(.*)",          "dest": "/index.html" }
+    { "src": "/",           "dest": "/index.html" },
+    { "src": "/docs",       "dest": "/skinanalytica_docs.html" },
+    { "src": "/pages/(.*)", "dest": "/pages/$1" },
+    { "src": "/(.*\\.html)","dest": "/$1" },
+    { "src": "/(.*\\.js)",  "dest": "/$1" },
+    { "src": "/(.*)",       "dest": "/index.html" }
   ]
 }

@@ -1,0 +1,16 @@
+# Tell Vercel to ignore these — Python is for Render only
+requirements.txt
+startup.py
+render.yaml
+api/
+assistant/
+delivery/
+agents/
+models/
+outputs/
+notebooks/
+data/
+venv/
+__pycache__/
+*.py
+*.pyc
