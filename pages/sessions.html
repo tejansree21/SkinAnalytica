@@ -1,0 +1,333 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<style>
+  :root{--bg:#080808;--surface:#111111;--surface2:#1a1a1a;--border:#2a2a2a;--border2:#333333;
+        --red:#dc2626;--red2:#ef4444;--red3:#fca5a5;--green2:#4ade80;--amber2:#fbbf24;
+        --text:#f5f5f5;--muted:#525252;--subtle:#a3a3a3;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);
+       color:var(--text);min-height:100vh;padding:2rem;}
+  h1{font-size:1.5rem;font-weight:800;letter-spacing:-0.4px;margin-bottom:0.25rem;}
+  h1 span{color:var(--red2);}
+  .sub{color:var(--muted);font-size:0.82rem;margin-bottom:2rem;}
+
+  /* ── Stats row ── */
+  .stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:0.85rem;margin-bottom:2rem;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+             padding:1rem;text-align:center;}
+  .stat-card .val{font-size:1.6rem;font-weight:900;font-family:monospace;letter-spacing:-1px;}
+  .stat-card .lbl{font-size:0.62rem;color:var(--muted);text-transform:uppercase;
+                  letter-spacing:0.6px;margin-top:0.2rem;}
+  .val-red{color:var(--red2);} .val-green{color:var(--green2);}
+  .val-amber{color:var(--amber2);} .val-white{color:var(--text);}
+
+  /* ── Section ── */
+  .section{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+           padding:1.25rem;margin-bottom:1.25rem;}
+  .section-header{display:flex;align-items:center;justify-content:space-between;
+                  margin-bottom:1rem;}
+  .section-title{font-size:0.72rem;font-weight:700;color:var(--muted);
+                 text-transform:uppercase;letter-spacing:0.7px;}
+  .refresh-btn{background:var(--surface2);border:1px solid var(--border2);
+               color:var(--subtle);padding:0.3rem 0.75rem;border-radius:5px;
+               font-size:0.72rem;cursor:pointer;transition:all 0.15s;}
+  .refresh-btn:hover{border-color:var(--red);color:var(--text);}
+
+  /* ── Table ── */
+  table{width:100%;border-collapse:collapse;font-size:0.78rem;}
+  th{background:var(--surface2);color:var(--muted);font-size:0.65rem;font-weight:700;
+     text-transform:uppercase;letter-spacing:0.6px;padding:0.6rem 0.85rem;text-align:left;
+     border-bottom:1px solid var(--border);}
+  td{padding:0.65rem 0.85rem;border-bottom:1px solid var(--border);color:var(--subtle);}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:var(--surface2);}
+  td:first-child{color:var(--text);font-weight:500;}
+
+  /* ── Verdict badges ── */
+  .badge{display:inline-block;font-size:0.65rem;font-weight:700;padding:0.15rem 0.55rem;
+         border-radius:4px;letter-spacing:0.3px;}
+  .b-cancer{background:rgba(220,38,38,0.15);color:var(--red3);}
+  .b-review{background:rgba(217,119,6,0.15);color:var(--amber2);}
+  .b-normal{background:rgba(22,163,74,0.15);color:var(--green2);}
+  .b-error {background:rgba(82,82,82,0.3);color:var(--muted);}
+
+  /* ── Priority ── */
+  .p1{color:var(--red2);font-weight:800;}
+  .p2{color:#f97316;font-weight:700;}
+  .p3{color:var(--amber2);font-weight:600;}
+  .p4{color:var(--green2);}
+
+  /* ── Scan_id mono ── */
+  .mono{font-family:monospace;font-size:0.72rem;color:var(--subtle);}
+
+  /* ── Filter bar ── */
+  .filter-bar{display:flex;gap:0.6rem;margin-bottom:1rem;align-items:center;flex-wrap:wrap;}
+  .filter-input{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;
+                padding:0.45rem 0.75rem;font-size:0.78rem;color:var(--text);
+                font-family:inherit;outline:none;width:200px;}
+  .filter-input:focus{border-color:var(--red);}
+  .filter-input::placeholder{color:var(--muted);}
+  .filter-select{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;
+                 padding:0.45rem 0.75rem;font-size:0.78rem;color:var(--text);
+                 font-family:inherit;outline:none;cursor:pointer;}
+  .filter-select:focus{border-color:var(--red);}
+  .count-label{font-size:0.72rem;color:var(--muted);margin-left:auto;}
+
+  /* ── Empty state ── */
+  .empty{text-align:center;padding:3rem 1rem;color:var(--muted);font-size:0.82rem;}
+  .empty-icon{font-size:2rem;margin-bottom:0.75rem;}
+
+  /* ── Session detail panel ── */
+  .detail-panel{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
+                padding:1rem;margin-top:0.75rem;display:none;}
+  .detail-panel.open{display:block;}
+  .detail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.6rem;margin-bottom:0.75rem;}
+  .detail-item .lbl{font-size:0.62rem;color:var(--muted);text-transform:uppercase;
+                    letter-spacing:0.5px;margin-bottom:0.2rem;}
+  .detail-item .val{font-size:0.85rem;font-weight:700;color:var(--text);}
+
+  /* ── Timeline bar ── */
+  .timeline{display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem;font-size:0.72rem;
+            color:var(--muted);}
+  .tl-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .tl-fill{height:100%;border-radius:2px;background:var(--red);}
+  .tl-fill.green{background:var(--green2);}
+  .tl-fill.amber{background:var(--amber2);}
+
+  /* ── Spinner ── */
+  .spinner{width:24px;height:24px;border:2px solid var(--border2);
+           border-top-color:var(--red);border-radius:50%;
+           animation:spin 0.7s linear infinite;margin:0 auto 0.5rem;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading{text-align:center;padding:2rem;font-size:0.8rem;color:var(--muted);}
+
+  @media(max-width:700px){
+    .stats-row{grid-template-columns:repeat(2,1fr);}
+    .filter-bar{flex-direction:column;align-items:stretch;}
+    .filter-input{width:100%;}
+  }
+</style>
+</head>
+<body>
+
+<h1>Sessions & <span>Audit</span></h1>
+<p class="sub">Every scan, batch session, and pipeline run — logged automatically</p>
+
+<!-- Stats row -->
+<div class="stats-row" id="stats-row">
+  <div class="stat-card"><div class="val val-white" id="stat-total">—</div><div class="lbl">Total Scans</div></div>
+  <div class="stat-card"><div class="val val-red"   id="stat-flagged">—</div><div class="lbl">Cancer Flagged</div></div>
+  <div class="stat-card"><div class="val val-amber" id="stat-review">—</div><div class="lbl">Review Required</div></div>
+  <div class="stat-card"><div class="val val-green" id="stat-normal">—</div><div class="lbl">Normal</div></div>
+  <div class="stat-card"><div class="val val-white" id="stat-sessions">—</div><div class="lbl">Research Sessions</div></div>
+</div>
+
+<!-- Scan audit log -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">Scan Audit Log</span>
+    <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+  </div>
+
+  <div class="filter-bar">
+    <input class="filter-input" id="scan-search" placeholder="Search scan ID, class..." oninput="filterScans()">
+    <select class="filter-select" id="scan-verdict" onchange="filterScans()">
+      <option value="">All verdicts</option>
+      <option value="CANCER_FLAGGED">Cancer Flagged</option>
+      <option value="REVIEW_REQUIRED">Review Required</option>
+      <option value="NORMAL">Normal</option>
+    </select>
+    <select class="filter-select" id="scan-class" onchange="filterScans()">
+      <option value="">All classes</option>
+      <option value="mel">Melanoma</option>
+      <option value="nv">Nevus</option>
+      <option value="bcc">BCC</option>
+      <option value="akiec">AK/IEC</option>
+      <option value="bkl">BKL</option>
+      <option value="df">DF</option>
+      <option value="vasc">Vasc</option>
+    </select>
+    <span class="count-label" id="scan-count"></span>
+  </div>
+
+  <div id="scan-table-wrap">
+    <div class="loading"><div class="spinner"></div>Loading scan log...</div>
+  </div>
+</div>
+
+<!-- Research sessions -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">Research Sessions</span>
+    <button class="refresh-btn" onclick="loadSessions()">↻ Refresh</button>
+  </div>
+  <div id="sessions-wrap">
+    <div class="loading"><div class="spinner"></div>Loading sessions...</div>
+  </div>
+</div>
+
+<script>
+const API = window.parent?.SA_CONFIG?.API_BASE || 'https://skinanalytica-api.onrender.com';
+let _scans    = [];
+let _sessions = [];
+
+async function loadAll() {
+  await Promise.all([loadScans(), loadSessions()]);
+}
+
+// ── Scan audit log ────────────────────────────────────────────────
+async function loadScans() {
+  const wrap = document.getElementById('scan-table-wrap');
+  wrap.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
+  try {
+    const res  = await fetch(`${API}/audit/log?limit=200`);
+    const data = await res.json();
+    _scans = data.entries || [];
+    renderScanTable(_scans);
+    updateStats(_scans);
+  } catch(e) {
+    wrap.innerHTML = `<div class="empty">
+      <div class="empty-icon">⚠️</div>
+      API offline — <a href="${API}/health" target="_blank" style="color:var(--red2)">check status</a><br>
+      <span style="font-size:0.75rem;color:var(--muted)">Start skinanalytica-api to see scan logs</span>
+    </div>`;
+  }
+}
+
+function renderScanTable(scans) {
+  const wrap = document.getElementById('scan-table-wrap');
+  document.getElementById('scan-count').textContent = `${scans.length} scans`;
+
+  if(!scans.length) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>No scans yet — upload an image on the Analyze page</div>';
+    return;
+  }
+
+  const rows = scans.map((s,i) => {
+    const vc  = s.verdict==='CANCER_FLAGGED'?'b-cancer':s.verdict==='REVIEW_REQUIRED'?'b-review':'b-normal';
+    const vl  = s.verdict==='CANCER_FLAGGED'?'Cancer':s.verdict==='REVIEW_REQUIRED'?'Review':'Normal';
+    const p   = s.priority||4;
+    const pc  = p<=1?'p1':p===2?'p2':p===3?'p3':'p4';
+    const ts  = (s.timestamp||'').slice(0,19).replace('T',' ');
+    const cls = s.pred_class||'—';
+    const conf= s.confidence!=null?(s.confidence*100).toFixed(1)+'%':'—';
+    return `<tr onclick="toggleDetail('detail-${i}',${JSON.stringify(JSON.stringify(s))})" style="cursor:pointer">
+      <td class="mono">${s.scan_id||'—'}</td>
+      <td>${ts}</td>
+      <td><span class="badge ${vc}">${vl}</span></td>
+      <td>${cls}</td>
+      <td>${conf}</td>
+      <td class="${pc}">P${p}</td>
+      <td id="detail-toggle-${i}" style="font-size:0.7rem;color:var(--muted)">▶</td>
+    </tr>
+    <tr><td colspan="7" style="padding:0">
+      <div class="detail-panel" id="detail-${i}"></div>
+    </td></tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>Scan ID</th><th>Timestamp</th><th>Verdict</th>
+      <th>Class</th><th>Confidence</th><th>Priority</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function toggleDetail(id, dataStr) {
+  const panel  = document.getElementById(id);
+  const idx    = id.replace('detail-','');
+  const toggle = document.getElementById(`detail-toggle-${idx}`);
+  if(panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    toggle.textContent = '▶';
+    return;
+  }
+  panel.classList.add('open');
+  toggle.textContent = '▼';
+  try {
+    const s = JSON.parse(dataStr);
+    const probs = s.probs ? Object.entries(s.probs)
+      .sort((a,b)=>b[1]-a[1])
+      .map(([c,p])=>`<div class="timeline"><span style="width:55px;flex-shrink:0">${c}</span>
+        <div class="tl-bar"><div class="tl-fill ${c==='mel'?'':'green'}" style="width:${(p*100).toFixed(1)}%"></div></div>
+        <span>${(p*100).toFixed(1)}%</span></div>`).join('') : '';
+    panel.innerHTML = `
+      <div class="detail-grid">
+        <div class="detail-item"><div class="lbl">Full Name</div><div class="val" style="font-size:0.75rem">${s.pred_class_full||s.pred_class||'—'}</div></div>
+        <div class="detail-item"><div class="lbl">ICD-10</div><div class="val mono">${s.icd10||'—'}</div></div>
+        <div class="detail-item"><div class="lbl">Mel Score</div><div class="val" style="color:var(--red2)">${s.mel_score!=null?(s.mel_score*100).toFixed(1)+'%':'—'}</div></div>
+        <div class="detail-item"><div class="lbl">Patient ID</div><div class="val mono" style="font-size:0.75rem">${s.patient_id||'—'}</div></div>
+      </div>
+      ${probs ? `<div style="margin-top:0.5rem">${probs}</div>` : ''}`;
+  } catch(e) {
+    panel.innerHTML = `<div style="color:var(--muted);font-size:0.78rem">Could not load detail</div>`;
+  }
+}
+
+function filterScans() {
+  const q  = document.getElementById('scan-search').value.toLowerCase();
+  const v  = document.getElementById('scan-verdict').value;
+  const c  = document.getElementById('scan-class').value;
+  const filtered = _scans.filter(s => {
+    const text = JSON.stringify(s).toLowerCase();
+    return (!q || text.includes(q))
+        && (!v || s.verdict === v)
+        && (!c || s.pred_class === c);
+  });
+  renderScanTable(filtered);
+}
+
+function updateStats(scans) {
+  const total   = scans.length;
+  const flagged = scans.filter(s=>s.verdict==='CANCER_FLAGGED').length;
+  const review  = scans.filter(s=>s.verdict==='REVIEW_REQUIRED').length;
+  const normal  = scans.filter(s=>s.verdict==='NORMAL').length;
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-flagged').textContent = flagged;
+  document.getElementById('stat-review').textContent  = review;
+  document.getElementById('stat-normal').textContent  = normal;
+}
+
+// ── Research sessions ─────────────────────────────────────────────
+async function loadSessions() {
+  const wrap = document.getElementById('sessions-wrap');
+  try {
+    const res  = await fetch(`${API}/research/sessions`);
+    const data = await res.json();
+    _sessions  = data.sessions || [];
+    document.getElementById('stat-sessions').textContent = _sessions.length;
+
+    if(!_sessions.length) {
+      wrap.innerHTML = '<div class="empty"><div class="empty-icon">🔬</div>No research sessions yet — run the agent pipeline on the Research page</div>';
+      return;
+    }
+
+    const rows = _sessions.map(s => {
+      const kb   = (s.size_bytes/1024).toFixed(1);
+      const date = (s.created||'').slice(0,16).replace('T',' ');
+      return `<tr>
+        <td>${s.session_name}</td>
+        <td>${date}</td>
+        <td>${kb} KB</td>
+        <td><span class="badge b-normal">Complete</span></td>
+      </tr>`;
+    }).join('');
+
+    wrap.innerHTML = `<table>
+      <thead><tr><th>Session Name</th><th>Created</th><th>Size</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  } catch(e) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div>Could not load sessions — API offline</div>';
+    document.getElementById('stat-sessions').textContent = '—';
+  }
+}
+
+// Auto-load on page open
+loadAll();
+
+// Refresh every 30s
+setInterval(loadAll, 30000);
+</script>
+</body></html>

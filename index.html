@@ -201,6 +201,7 @@
     <li><a id="nav-assistant" onclick="navigate('assistant')">Assistant</a></li>
     <li><a id="nav-agents"    onclick="navigate('agents')"   >Agents</a></li>
     <li><a id="nav-api"       onclick="navigate('api')"      >API Docs</a></li>
+    <li><a id="nav-sessions"  onclick="navigate('sessions')" >Sessions</a></li>
   </ul>
 
   <div class="nav-right">
@@ -227,6 +228,7 @@ const PAGES = {
   assistant: 'pages/assistant.html',
   agents   : 'pages/agents.html',
   api      : 'pages/api.html',
+  sessions : 'pages/sessions.html',
 };
 
 let currentPage = 'home';
@@ -260,7 +262,7 @@ async function checkApi() {
   const txt  = document.getElementById('api-text');
   try {
     const res  = await fetch((window.SA_CONFIG?.API_BASE || 'http://localhost:8001') + '/health',
-                             { signal: AbortSignal.timeout(3000) });
+                             { signal: AbortSignal.timeout(15000) });
     const data = await res.json();
     if (data.status === 'ok') {
       pill.className = 'api-dot live';
