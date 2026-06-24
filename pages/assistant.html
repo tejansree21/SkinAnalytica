@@ -1,0 +1,208 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<style>
+  :root{--bg:#080808;--surface:#111111;--surface2:#1a1a1a;--border:#2a2a2a;--border2:#333333;
+        --red:#dc2626;--red2:#ef4444;--red3:#fca5a5;--green2:#4ade80;--amber2:#fbbf24;
+        --text:#f5f5f5;--muted:#525252;--subtle:#a3a3a3;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);
+       height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  .top{padding:1.5rem 2rem 0;flex-shrink:0;}
+  h1{font-size:1.4rem;font-weight:800;letter-spacing:-0.4px;}
+  h1 span{color:var(--red2);}
+  .sub{color:var(--muted);font-size:0.8rem;margin-top:0.2rem;}
+  .main{display:grid;grid-template-columns:260px 1fr;gap:1rem;
+        padding:1rem 2rem 1.5rem;flex:1;min-height:0;}
+  .sidebar{display:flex;flex-direction:column;gap:0.5rem;overflow-y:auto;}
+  .sidebar h4{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;
+              letter-spacing:0.8px;padding:0.25rem 0;margin-bottom:0.25rem;}
+  .q-btn{background:var(--surface);border:1px solid var(--border);border-radius:7px;
+         padding:0.6rem 0.85rem;font-size:0.75rem;color:var(--subtle);text-align:left;
+         cursor:pointer;transition:all 0.15s;width:100%;line-height:1.4;}
+  .q-btn:hover{border-color:var(--red);color:var(--text);background:rgba(220,38,38,0.04);}
+  .q-cat{font-size:0.62rem;font-weight:700;color:var(--red2);text-transform:uppercase;
+         letter-spacing:0.4px;margin-top:0.1rem;}
+  .chat-panel{display:flex;flex-direction:column;min-height:0;}
+  .messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.75rem;
+            padding-right:0.25rem;margin-bottom:1rem;}
+  .messages::-webkit-scrollbar{width:4px;}
+  .messages::-webkit-scrollbar-track{background:var(--surface);}
+  .messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+  .msg{max-width:85%;display:flex;flex-direction:column;gap:0.25rem;}
+  .msg.user{align-self:flex-end;}
+  .msg.assistant{align-self:flex-start;}
+  .bubble{padding:0.7rem 1rem;border-radius:10px;font-size:0.82rem;line-height:1.6;
+          white-space:pre-wrap;word-break:break-word;}
+  .msg.user .bubble{background:var(--red);color:#fff;}
+  .msg.assistant .bubble{background:var(--surface);border:1px solid var(--border2);color:var(--text);}
+  .msg-meta{font-size:0.65rem;color:var(--muted);}
+  .msg.user .msg-meta{text-align:right;}
+  .input-row{display:flex;gap:0.5rem;flex-shrink:0;}
+  .chat-input{flex:1;background:var(--surface);border:1px solid var(--border2);
+              border-radius:9px;padding:0.75rem 1rem;font-size:0.85rem;color:var(--text);
+              font-family:inherit;resize:none;outline:none;transition:border-color 0.15s;
+              line-height:1.5;}
+  .chat-input:focus{border-color:var(--red);}
+  .chat-input::placeholder{color:var(--muted);}
+  .send-btn{background:var(--red);color:#fff;border:none;border-radius:9px;
+            padding:0.75rem 1.25rem;font-size:0.85rem;font-weight:700;
+            cursor:pointer;transition:background 0.15s;flex-shrink:0;}
+  .send-btn:hover{background:var(--red2);}
+  .send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .typing{display:flex;align-items:center;gap:0.3rem;padding:0.5rem 0;}
+  .typing span{width:6px;height:6px;background:var(--muted);border-radius:50%;
+               animation:bounce 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:0.2s;}
+  .typing span:nth-child(3){animation-delay:0.4s;}
+  @keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+  .intent-badge{display:inline-block;font-size:0.6rem;font-weight:700;padding:0.1rem 0.4rem;
+                border-radius:3px;margin-right:0.3rem;text-transform:uppercase;letter-spacing:0.3px;}
+  .intent-data{background:rgba(220,38,38,0.15);color:var(--red3);}
+  .intent-know{background:rgba(74,222,128,0.12);color:var(--green2);}
+  .welcome{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+           padding:1.25rem;max-width:480px;align-self:flex-start;}
+  .welcome h3{font-size:0.95rem;font-weight:700;margin-bottom:0.4rem;}
+  .welcome p{font-size:0.8rem;color:var(--muted);line-height:1.6;}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Research <span>Assistant</span></h1>
+  <p class="sub">Ask questions about your data, models, and dermoscopy research · Powered by Claude</p>
+</div>
+
+<div class="main">
+  <!-- Sidebar: pre-built questions -->
+  <div class="sidebar">
+    <h4>Quick Questions</h4>
+    <div id="q-list"></div>
+  </div>
+
+  <!-- Chat panel -->
+  <div class="chat-panel">
+    <div class="messages" id="messages">
+      <div class="welcome">
+        <h3>🔬 SkinAnalytica Research Assistant</h3>
+        <p>Ask me about your model performance, recent batches, annotation conflicts,
+        or any dermoscology research question. I can query your live platform data
+        or answer from published literature.</p>
+      </div>
+    </div>
+    <div class="input-row">
+      <textarea class="chat-input" id="chat-input" rows="2"
+        placeholder="Ask a question... (e.g. What is our current MelAUC?)"
+        onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ASSISTANT_API = window.parent?.SA_CONFIG?.ASSISTANT_BASE || 'http://localhost:8002';
+const SESSION_ID    = 'ui_' + Date.now();
+
+const QUICK_QS = [
+  { id:'Q06', q:'What is the current ensemble MelAUC?',       cat:'data' },
+  { id:'Q07', q:'Any drift warnings from the last batch?',    cat:'data' },
+  { id:'Q04', q:'Show me annotation conflicts',               cat:'data' },
+  { id:'Q08', q:'How many images in the active learning queue?', cat:'data' },
+  { id:'Q01', q:'How many melanomas flagged this week?',      cat:'data' },
+  { id:'Q09', q:'Is the model overconfident?',                cat:'data' },
+  { id:'Q12', q:'How does our AUC compare to ISIC leaderboard?', cat:'knowledge' },
+  { id:'Q11', q:'Breslow depth > 1mm clinical significance?', cat:'knowledge' },
+  { id:'Q18', q:'What is the ABCDE rule for melanoma?',       cat:'knowledge' },
+  { id:'Q20', q:'How to interpret pAUC score?',               cat:'knowledge' },
+];
+
+// Render quick questions
+const list = document.getElementById('q-list');
+QUICK_QS.forEach(q => {
+  const btn = document.createElement('button');
+  btn.className = 'q-btn';
+  btn.innerHTML = `<div>${q.q}</div><div class="q-cat">${q.cat}</div>`;
+  btn.onclick = () => askPrebuilt(q.id, q.q);
+  list.appendChild(btn);
+});
+
+function handleKey(e) {
+  if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function addMessage(role, text, intent='') {
+  const msgs = document.getElementById('messages');
+  const div  = document.createElement('div');
+  div.className = `msg ${role}`;
+  const badge = intent ? `<span class="intent-badge intent-${intent==='data'?'data':'know'}">${intent}</span>` : '';
+  div.innerHTML = `
+    <div class="bubble">${badge}${escHtml(text)}</div>
+    <div class="msg-meta">${role==='user'?'You':'Assistant'} · ${new Date().toLocaleTimeString()}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('messages');
+  const div  = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typing-indicator';
+  div.innerHTML = `<div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if(t) t.remove();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+           .replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const q     = input.value.trim();
+  if(!q) return;
+  input.value = '';
+  document.getElementById('send-btn').disabled = true;
+  addMessage('user', q);
+  addTyping();
+  try {
+    const res  = await fetch(`${ASSISTANT_API}/assistant/ask`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ question:q, session_id:SESSION_ID })
+    });
+    const data = await res.json();
+    removeTyping();
+    addMessage('assistant', data.answer || 'No answer returned', data.intent);
+  } catch(e) {
+    removeTyping();
+    addMessage('assistant', `⚠ Assistant API offline (${e.message})\n\nStart assistant_api.py on :8002 to enable full responses.\n\nFor data questions, check localhost:8001/docs directly.`);
+  }
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+async function askPrebuilt(qid, question) {
+  document.getElementById('send-btn').disabled = true;
+  addMessage('user', question);
+  addTyping();
+  try {
+    const res  = await fetch(`${ASSISTANT_API}/assistant/ask/prebuilt`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ question_id:qid, session_id:SESSION_ID })
+    });
+    const data = await res.json();
+    removeTyping();
+    addMessage('assistant', data.answer || 'No answer returned', data.intent);
+  } catch(e) {
+    removeTyping();
+    addMessage('assistant', `⚠ Assistant API offline — start assistant_api.py on :8002`);
+  }
+  document.getElementById('send-btn').disabled = false;
+}
+</script>
+</body></html>

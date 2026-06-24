@@ -1,0 +1,265 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<style>
+  :root {
+    --bg:#080808;--surface:#111111;--surface2:#1a1a1a;
+    --border:#2a2a2a;--border2:#333333;
+    --red:#dc2626;--red2:#ef4444;--red3:#fca5a5;
+    --green2:#4ade80;--amber2:#fbbf24;
+    --text:#f5f5f5;--muted:#525252;--subtle:#a3a3a3;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);
+       color:var(--text);min-height:100vh;padding:2.5rem;}
+  h1{font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;margin-bottom:0.4rem;}
+  h1 span{color:var(--red2);}
+  .sub{color:var(--muted);font-size:0.875rem;margin-bottom:2rem;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:1000px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;}
+  .card h3{font-size:0.9rem;font-weight:700;margin-bottom:1rem;color:var(--subtle);
+            text-transform:uppercase;letter-spacing:0.6px;}
+  .upload-zone{border:2px dashed var(--border2);border-radius:10px;padding:2.5rem 1.5rem;
+               text-align:center;cursor:pointer;transition:all 0.2s;}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--red);background:rgba(220,38,38,0.04);}
+  .upload-zone h4{font-size:1rem;font-weight:700;margin:0.75rem 0 0.3rem;}
+  .upload-zone p{font-size:0.82rem;color:var(--muted);margin-bottom:1rem;}
+  .btn{background:var(--red);color:#fff;border:none;padding:0.65rem 1.5rem;
+       border-radius:7px;font-size:0.85rem;font-weight:700;cursor:pointer;
+       transition:background 0.2s;}
+  .btn:hover{background:var(--red2);}
+  .btn-outline{background:transparent;color:var(--subtle);border:1px solid var(--border2);
+               padding:0.5rem 1rem;border-radius:7px;font-size:0.8rem;
+               font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .btn-outline:hover{border-color:var(--red);color:var(--text);}
+  #preview-box{width:100%;aspect-ratio:1;border-radius:8px;background:var(--surface2);
+               border:1px solid var(--border);display:flex;align-items:center;
+               justify-content:center;overflow:hidden;margin-bottom:1rem;}
+  #preview-box img{width:100%;height:100%;object-fit:cover;border-radius:7px;}
+  #preview-box .placeholder{color:var(--muted);font-size:0.82rem;text-align:center;}
+  .result-section{margin-top:1.5rem;}
+  .verdict-bar{display:flex;align-items:center;gap:0.75rem;
+               background:var(--surface2);border:1px solid var(--border);
+               border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;}
+  .v-icon{width:40px;height:40px;border-radius:9px;display:flex;
+          align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+  .v-cancer{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);}
+  .v-review{background:rgba(217,119,6,0.15); border:1px solid rgba(217,119,6,0.3);}
+  .v-normal{background:rgba(22,163,74,0.15);  border:1px solid rgba(22,163,74,0.3);}
+  .v-label{font-weight:700;font-size:1rem;}
+  .v-sub{font-size:0.78rem;color:var(--muted);margin-top:0.1rem;}
+  .metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-bottom:1rem;}
+  .metric{background:var(--surface2);border:1px solid var(--border);
+          border-radius:8px;padding:0.75rem 1rem;}
+  .metric .lbl{font-size:0.65rem;font-weight:700;color:var(--muted);
+               text-transform:uppercase;letter-spacing:0.5px;}
+  .metric .val{font-size:1.3rem;font-weight:800;margin-top:0.2rem;}
+  .red-val{color:var(--red2);} .green-val{color:var(--green2);} .amber-val{color:var(--amber2);}
+  .prob-row{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem;}
+  .prob-lbl{font-size:0.7rem;color:var(--subtle);width:120px;flex-shrink:0;}
+  .prob-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+  .prob-fill{height:100%;border-radius:2px;transition:width 0.5s cubic-bezier(.25,1,.5,1);}
+  .prob-pct{font-size:0.68rem;color:var(--muted);width:34px;text-align:right;}
+  .recs-list{margin:0;padding-left:1.1rem;}
+  .recs-list li{font-size:0.8rem;color:var(--subtle);margin-bottom:0.35rem;line-height:1.5;}
+  .scan-id{font-size:0.7rem;color:var(--muted);font-family:monospace;
+           background:var(--surface2);padding:0.2rem 0.5rem;border-radius:4px;}
+  .spinner{width:36px;height:36px;border:2.5px solid var(--border2);
+           border-top-color:var(--red);border-radius:50%;
+           animation:spin 0.7s linear infinite;margin:0 auto 0.75rem;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .analyzing{text-align:center;padding:2rem;}
+  .analyzing p{font-size:0.82rem;color:var(--muted);margin-top:0.25rem;}
+  .steps{margin-top:1rem;text-align:left;display:inline-block;}
+  .step{font-size:0.75rem;color:var(--muted);margin:0.3rem 0;
+        display:flex;align-items:center;gap:0.4rem;}
+  .step.done{color:var(--green2);} .step.active{color:var(--red2);}
+  .step-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+  #file-input{display:none;}
+  .icd-badge{display:inline-block;background:rgba(220,38,38,0.1);
+             border:1px solid rgba(220,38,38,0.2);color:var(--red3);
+             font-size:0.68rem;font-weight:700;padding:0.15rem 0.5rem;
+             border-radius:4px;font-family:monospace;margin-left:0.5rem;}
+  @media(max-width:680px){.grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<h1>Dermoscopy <span>Analysis</span></h1>
+<p class="sub">Upload a dermoscopy image for AI-assisted classification · Powered by 3-model ensemble</p>
+
+<div class="grid">
+
+  <!-- Left: Upload -->
+  <div>
+    <div class="card">
+      <h3>Image Input</h3>
+      <div class="upload-zone" id="dz" onclick="document.getElementById('file-input').click()">
+        <div style="font-size:2rem">🖼️</div>
+        <h4>Drop image here</h4>
+        <p>JPEG · PNG · TIFF · BMP</p>
+        <button class="btn" onclick="event.stopPropagation();document.getElementById('file-input').click()">Choose File</button>
+        <input type="file" id="file-input" accept="image/*" onchange="handleFile(this)">
+      </div>
+
+      <!-- Preview -->
+      <div id="preview-box" style="margin-top:1rem">
+        <div class="placeholder">
+          <div style="font-size:2rem;margin-bottom:0.5rem">🔬</div>
+          Image preview will appear here
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
+        <button class="btn-outline" onclick="clearAll()">Clear</button>
+        <button class="btn" id="analyze-btn" onclick="analyzeImage()" style="flex:1" disabled>
+          Analyze Image
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Results -->
+  <div>
+    <div class="card">
+      <h3>Results</h3>
+      <div id="result-area">
+        <div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-size:0.85rem">
+          <div style="font-size:2.5rem;margin-bottom:0.75rem">📊</div>
+          Upload an image and click Analyze to see results
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = window.parent?.SA_CONFIG?.API_BASE || 'http://localhost:8001';
+let currentFile = null;
+
+// Drag & drop
+const dz = document.getElementById('dz');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith('image/')) loadPreview(f);
+});
+
+function handleFile(input) {
+  if(input.files[0]) loadPreview(input.files[0]);
+}
+
+function loadPreview(file) {
+  currentFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('preview-box').innerHTML =
+      `<img src="${e.target.result}" alt="preview">`;
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('analyze-btn').disabled = false;
+}
+
+function clearAll() {
+  currentFile = null;
+  document.getElementById('preview-box').innerHTML =
+    `<div class="placeholder"><div style="font-size:2rem;margin-bottom:0.5rem">🔬</div>Image preview will appear here</div>`;
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('result-area').innerHTML =
+    `<div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-size:0.85rem">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem">📊</div>
+      Upload an image and click Analyze to see results
+    </div>`;
+  document.getElementById('file-input').value = '';
+}
+
+async function analyzeImage() {
+  if(!currentFile) return;
+  showAnalyzing();
+  try {
+    const fd = new FormData();
+    fd.append('file', currentFile);
+    const res  = await fetch(`${API}/analyze`, { method:'POST', body:fd });
+    if(!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    showResult(data);
+  } catch(e) {
+    document.getElementById('result-area').innerHTML =
+      `<div style="color:var(--red2);padding:1rem;font-size:0.85rem">
+        ⚠ Analysis failed: ${e.message}<br>
+        <span style="color:var(--muted)">Make sure SA05_api.py is running on :8001</span>
+      </div>`;
+  }
+}
+
+function showAnalyzing() {
+  document.getElementById('result-area').innerHTML = `
+    <div class="analyzing">
+      <div class="spinner"></div>
+      <strong>Analyzing...</strong>
+      <p>Three-model ensemble inference</p>
+      <div class="steps">
+        <div class="step done"><span class="step-dot"></span>Hair removal preprocessing</div>
+        <div class="step active"><span class="step-dot"></span>EfficientNetV2-S inference</div>
+        <div class="step"><span class="step-dot"></span>ViT-Large inference</div>
+        <div class="step"><span class="step-dot"></span>ConvNeXt-Large inference</div>
+        <div class="step"><span class="step-dot"></span>Ensemble calibration</div>
+      </div>
+    </div>`;
+}
+
+function showResult(d) {
+  const vm = {
+    CANCER_FLAGGED :{ cls:'v-cancer', icon:'⚠️', label:'Cancer Flagged',   color:'var(--red2)' },
+    REVIEW_REQUIRED:{ cls:'v-review', icon:'🔍', label:'Review Required',  color:'var(--amber2)' },
+    NORMAL         :{ cls:'v-normal', icon:'✅', label:'Normal / Benign',  color:'var(--green2)' },
+  };
+  const v   = vm[d.verdict] || vm.REVIEW_REQUIRED;
+  const clr = { mel:'#dc2626',nv:'#16a34a',bcc:'#d97706',akiec:'#ea580c',bkl:'#0891b2',df:'#7c3aed',vasc:'#db2777' };
+  const fn  = { mel:'Melanoma',nv:'Melanocytic Nevus',bcc:'Basal Cell Carcinoma',
+                akiec:'Actinic Keratosis',bkl:'Benign Keratosis',df:'Dermatofibroma',vasc:'Vascular Lesion' };
+  const cls = ['mel','nv','bcc','akiec','bkl','df','vasc'];
+  const cc  = d.confidence>=0.9?'green-val':d.confidence>=0.7?'amber-val':'red-val';
+  const mc  = (d.mel_score||0)>0.45?'red-val':'green-val';
+  const pc  = d.priority<=2?'red-val':d.priority===3?'amber-val':'green-val';
+
+  const bars = cls.map(c => {
+    const p = ((d.probs?.[c]||0)*100).toFixed(1);
+    return `<div class="prob-row">
+      <div class="prob-lbl">${fn[c]}</div>
+      <div class="prob-track"><div class="prob-fill" style="width:${p}%;background:${clr[c]}"></div></div>
+      <div class="prob-pct">${p}%</div>
+    </div>`;
+  }).join('');
+
+  const recs = (d.treatment_recs||[]).slice(0,4).map(r=>`<li>${r}</li>`).join('');
+
+  document.getElementById('result-area').innerHTML = `
+    <div class="verdict-bar">
+      <div class="v-icon ${v.cls}">${v.icon}</div>
+      <div>
+        <div class="v-label" style="color:${v.color}">${v.label}</div>
+        <div class="v-sub">${d.pred_class_full||''}
+          <span class="icd-badge">${d.icd10||''}</span>
+          <span class="scan-id">${d.scan_id||''}</span>
+        </div>
+      </div>
+    </div>
+    <div class="metrics-row">
+      <div class="metric"><div class="lbl">Confidence</div><div class="val ${cc}">${((d.confidence||0)*100).toFixed(1)}%</div></div>
+      <div class="metric"><div class="lbl">Mel Score</div><div class="val ${mc}">${((d.mel_score||0)*100).toFixed(1)}%</div></div>
+      <div class="metric"><div class="lbl">Priority</div><div class="val ${pc}">P${d.priority||4}</div></div>
+    </div>
+    <div style="margin-bottom:1rem">${bars}</div>
+    ${recs?`<div class="card" style="background:var(--surface2);border-color:var(--border);padding:1rem">
+      <div class="lbl" style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.6rem">NCCN Recommendations</div>
+      <ul class="recs-list">${recs}</ul>
+    </div>`:''}
+    <div style="margin-top:0.75rem;font-size:0.68rem;color:var(--muted);text-align:right">
+      Latency: ${d.latency_ms||0}ms · T=0.4095 · INT8 ensemble
+    </div>`;
+}
+</script>
+</body></html>

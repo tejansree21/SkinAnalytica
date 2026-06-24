@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkinAnalytica Docs</title>
+<style>
+  /* ── Tokens ─────────────────────────────────────────────── */
+  :root {
+    --ink:       #0a0a0a;
+    --paper:     #0f0f0f;
+    --lift:      #161616;
+    --lift2:     #1e1e1e;
+    --rule:      #242424;
+    --rule2:     #2e2e2e;
+    --blood:     #c41a1a;
+    --crimson:   #e02020;
+    --coral:     #ff4444;
+    --coral-dim: rgba(224,32,32,0.12);
+    --teal:      #14b8a6;
+    --teal-dim:  rgba(20,184,166,0.1);
+    --gold:      #d97706;
+    --text:      #f0f0f0;
+    --text2:     #a0a0a0;
+    --text3:     #5a5a5a;
+    --mono:      'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+    --sans:      'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--ink);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Top nav ─────────────────────────────────────────────── */
+  .topnav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    height: 52px;
+    padding: 0 2rem;
+    background: rgba(10,10,10,0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .topnav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: var(--text);
+    text-decoration: none;
+    margin-right: 2.5rem;
+    flex-shrink: 0;
+  }
+
+  .brand-mark {
+    width: 26px; height: 26px;
+    background: var(--crimson);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+    box-shadow: 0 0 10px rgba(224,32,32,0.5);
+  }
+
+  .brand-word span { color: var(--coral); }
+
+  .topnav-links {
+    display: flex;
+    gap: 0.15rem;
+    list-style: none;
+    flex: 1;
+  }
+
+  .topnav-links a {
+    display: block;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text3);
+    text-decoration: none;
+    border-radius: 5px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .topnav-links a:hover { color: var(--text); background: var(--lift); }
+  .topnav-links a.active { color: var(--text); }
+
+  .topnav-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+  }
+
+  .version-chip {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text3);
+    border: 1px solid var(--rule2);
+    padding: 0.18rem 0.6rem;
+    border-radius: 20px;
+    font-family: var(--mono);
+  }
+
+  .back-btn {
+    background: var(--crimson);
+    color: #fff;
+    border: none;
+    padding: 0.3rem 0.85rem;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  /* ── Hero ────────────────────────────────────────────────── */
+  .hero {
+    padding: 100px 2rem 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse at center top,
+      rgba(224,32,32,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--coral);
+    border: 1px solid rgba(224,32,32,0.3);
+    background: rgba(224,32,32,0.06);
+    padding: 0.3rem 0.9rem;
+    border-radius: 20px;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1.05;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--crimson);
+  }
+
+  .hero-desc {
+    font-size: 1rem;
+    color: var(--text2);
+    max-width: 520px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.75;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 3.5rem;
+  }
+
+  .cta-primary {
+    background: var(--crimson);
+    color: #fff;
+    border: none;
+    padding: 0.7rem 1.6rem;
+    border-radius: 7px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-decoration: none;
+  }
+
+  .cta-primary:hover { background: var(--coral); }
+
+  .cta-secondary {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--rule2);
+    padding: 0.7rem 1.6rem;
+    border-radius: 7px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+
+  .cta-secondary:hover { border-color: var(--crimson); color: var(--text); }
+
+  /* ── Stats bar ───────────────────────────────────────────── */
+  .stats-bar {
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    justify-content: center;
+    background: var(--lift);
+  }
+
+  .stat-item {
+    padding: 1.25rem 2.5rem;
+    text-align: center;
+    border-right: 1px solid var(--rule);
+  }
+
+  .stat-item:last-child { border-right: none; }
+
+  .stat-num {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--coral);
+    letter-spacing: -0.5px;
+    display: block;
+    font-family: var(--mono);
+  }
+
+  .stat-lbl {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-top: 0.15rem;
+  }
+
+  /* ── Page layout ─────────────────────────────────────────── */
+  .page {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    gap: 0;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────── */
+  .sidebar {
+    position: sticky;
+    top: 52px;
+    height: calc(100vh - 52px);
+    overflow-y: auto;
+    padding: 2rem 0 2rem 0;
+    border-right: 1px solid var(--rule);
+  }
+
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--rule2); border-radius: 2px; }
+
+  .sidebar-group { margin-bottom: 1.75rem; }
+
+  .sidebar-group-title {
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 0 1.25rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.38rem 1.25rem;
+    font-size: 0.8rem;
+    color: var(--text3);
+    text-decoration: none;
+    transition: all 0.12s;
+    border-left: 2px solid transparent;
+  }
+
+  .sidebar a:hover { color: var(--text2); }
+  .sidebar a.active { color: var(--text); border-left-color: var(--crimson); background: var(--coral-dim); }
+
+  /* ── Content area ────────────────────────────────────────── */
+  .doc-content {
+    padding: 3rem 3rem 6rem;
+    min-width: 0;
+  }
+
+  /* ── Section ─────────────────────────────────────────────── */
+  .doc-section {
+    margin-bottom: 4rem;
+    scroll-margin-top: 70px;
+  }
+
+  .section-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--crimson);
+    margin-bottom: 0.5rem;
+  }
+
+  .doc-section h2 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -0.8px;
+    margin-bottom: 0.75rem;
+    line-height: 1.15;
+  }
+
+  .doc-section > p {
+    color: var(--text2);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    max-width: 640px;
+    line-height: 1.75;
+  }
+
+  .doc-section h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 2rem 0 0.6rem;
+    color: var(--text);
+  }
+
+  .doc-section p {
+    color: var(--text2);
+    font-size: 0.875rem;
+    line-height: 1.75;
+    margin-bottom: 1rem;
+  }
+
+  /* ── Cards ───────────────────────────────────────────────── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 0.85rem;
+    margin: 1.5rem 0;
+  }
+
+  .card-grid-2 { grid-template-columns: repeat(2,1fr); }
+
+  .doc-card {
+    background: var(--lift);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 1.1rem;
+    transition: border-color 0.15s;
+  }
+
+  .doc-card:hover { border-color: var(--rule2); }
+  .doc-card.red-card { border-left: 3px solid var(--crimson); }
+  .doc-card.teal-card { border-left: 3px solid var(--teal); }
+  .doc-card.gold-card { border-left: 3px solid var(--gold); }
+
+  .card-icon { font-size: 1.3rem; margin-bottom: 0.5rem; }
+  .card-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .card-body { font-size: 0.75rem; color: var(--text2); line-height: 1.6; }
+
+  /* ── Model table ─────────────────────────────────────────── */
+  .doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin: 1rem 0;
+  }
+
+  .doc-table th {
+    background: var(--lift2);
+    color: var(--text3);
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 0.65rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .doc-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--rule);
+    color: var(--text2);
+  }
+
+  .doc-table td:first-child { color: var(--text); font-weight: 600; font-family: var(--mono); font-size:0.8rem; }
+  .doc-table tr:last-child td { border-bottom: none; }
+  .doc-table tr:hover td { background: var(--lift); }
+
+  .auc-val { color: var(--coral); font-weight: 700; font-family: var(--mono); }
+
+  /* ── Code block ──────────────────────────────────────────── */
+  .code-wrap {
+    background: #0a0a0a;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1rem 0;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.45rem 0.9rem;
+    background: var(--lift);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .code-lang {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .copy-btn {
+    font-size: 0.65rem;
+    color: var(--text3);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .copy-btn:hover { color: var(--text); }
+
+  pre {
+    padding: 1rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: #cdd6f4;
+    overflow-x: auto;
+  }
+
+  .kw  { color: #cba6f7; }
+  .str { color: #a6e3a1; }
+  .num { color: #fab387; }
+  .cm  { color: #45475a; }
+  .key { color: #89b4fa; }
+
+  /* ── Callout ─────────────────────────────────────────────── */
+  .callout {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    border-left: 3px solid;
+  }
+
+  .callout-info   { background: var(--teal-dim); border-color: var(--teal); color: #94ecdf; }
+  .callout-warn   { background: rgba(217,119,6,0.1); border-color: var(--gold); color: #fcd34d; }
+  .callout-danger { background: var(--coral-dim); border-color: var(--crimson); color: #fca5a5; }
+
+  /* ── Pipeline diagram ────────────────────────────────────── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 1.25rem 0;
+    margin: 1rem 0;
+  }
+
+  .pipe-step {
+    flex-shrink: 0;
+    text-align: center;
+  }
+
+  .pipe-box {
+    background: var(--lift);
+    border: 1px solid var(--rule2);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  .pipe-box.highlight {
+    border-color: var(--crimson);
+    color: var(--coral);
+    background: var(--coral-dim);
+  }
+
+  .pipe-num {
+    font-size: 0.58rem;
+    color: var(--text3);
+    margin-bottom: 0.3rem;
+    font-family: var(--mono);
+  }
+
+  .pipe-arrow {
+    color: var(--rule2);
+    font-size: 0.9rem;
+    padding: 0 0.35rem;
+    flex-shrink: 0;
+  }
+
+  /* ── Badge / tag ─────────────────────────────────────────── */
+  .tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.12rem 0.5rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+    margin: 0 0.1rem;
+  }
+
+  .tag-red   { background: var(--coral-dim); color: var(--coral); }
+  .tag-teal  { background: var(--teal-dim); color: var(--teal); }
+  .tag-muted { background: var(--lift2); color: var(--text3); }
+
+  /* ── Metric highlight ────────────────────────────────────── */
+  .metric-row {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+
+  .metric-block {
+    background: var(--lift);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 0.85rem 1.1rem;
+    min-width: 120px;
+  }
+
+  .metric-block .num {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--coral);
+    font-family: var(--mono);
+    letter-spacing: -0.5px;
+  }
+
+  .metric-block .lbl {
+    font-size: 0.62rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-top: 0.2rem;
+  }
+
+  /* ── Step list ───────────────────────────────────────────── */
+  .step-list { margin: 1rem 0; }
+
+  .step-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .step-num {
+    width: 26px; height: 26px;
+    background: var(--crimson);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  .step-body h4 { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .step-body p  { font-size: 0.8rem; color: var(--text2); line-height:1.6; margin:0; }
+
+  /* ── Responsive ──────────────────────────────────────────── */
+  @media (max-width: 860px) {
+    .page { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .card-grid { grid-template-columns: 1fr; }
+    .stat-item { padding: 1rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top nav -->
+<nav class="topnav">
+  <a class="topnav-brand" href="#">
+    <div class="brand-mark">🔬</div>
+    <span class="brand-word">Skin<span>Analytica</span> Docs</span>
+  </a>
+  <ul class="topnav-links">
+    <li><a href="#overview"      class="active">Overview</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#agents">Agents</a></li>
+    <li><a href="#api-ref">API Reference</a></li>
+    <li><a href="#ui">UI</a></li>
+    <li><a href="#quickstart">Quickstart</a></li>
+  </ul>
+  <div class="topnav-right">
+    <span class="version-chip">v1.1.0</span>
+    <a class="back-btn" href="skinanalytica_shell.html">← Back to App</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-eyebrow">ISIC · Dermoscopy Intelligence · NCI Ireland</div>
+  <h1>SkinAnalytica<br><em>Documentation</em></h1>
+  <p class="hero-desc">
+    A full-stack AI platform for dermoscopy QA — three-model ensemble,
+    8-agent pipeline, conversational research assistant, and FHIR export.
+  </p>
+  <div class="hero-ctas">
+    <a class="cta-primary"   href="#quickstart">Get Started</a>
+    <a class="cta-secondary" href="#models">Model Architecture</a>
+    <a class="cta-secondary" href="#api-ref">API Reference</a>
+  </div>
+</section>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <div class="stat-item"><span class="stat-num">0.9887</span><span class="stat-lbl">Best Model AUC</span></div>
+  <div class="stat-item"><span class="stat-num">68.5K</span><span class="stat-lbl">Training Images</span></div>
+  <div class="stat-item"><span class="stat-num">7</span><span class="stat-lbl">Lesion Classes</span></div>
+  <div class="stat-item"><span class="stat-num">8</span><span class="stat-lbl">AI Agents</span></div>
+  <div class="stat-item"><span class="stat-num">3</span><span class="stat-lbl">API Services</span></div>
+  <div class="stat-item"><span class="stat-num">95.5%</span><span class="stat-lbl">Specificity</span></div>
+</div>
+
+<!-- Body -->
+<div class="page">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Introduction</div>
+      <a href="#overview" class="active">Overview</a>
+      <a href="#quickstart">Quickstart</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Platform</div>
+      <a href="#architecture">Architecture</a>
+      <a href="#models">Models & Training</a>
+      <a href="#ensemble">Ensemble & Calibration</a>
+      <a href="#explainability">Explainability</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Agents</div>
+      <a href="#agents">Agent Pipeline</a>
+      <a href="#agent-list">All 8 Agents</a>
+      <a href="#research-assistant">Research Assistant</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">API</div>
+      <a href="#api-ref">Core API :8001</a>
+      <a href="#assistant-api">Assistant API :8002</a>
+      <a href="#delivery-api">Delivery API :8003</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">UI</div>
+      <a href="#ui">Shell + Pages</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Reference</div>
+      <a href="#classes">Lesion Classes</a>
+      <a href="#fairness">Fairness & Bias</a>
+      <a href="#roadmap">Roadmap</a>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <main class="doc-content">
+
+    <!-- Overview -->
+    <section class="doc-section" id="overview">
+      <div class="section-eyebrow">Introduction</div>
+      <h2>What is SkinAnalytica?</h2>
+      <p>SkinAnalytica is an ISIC-grade dermoscopy AI platform built for skin cancer researchers and clinical dermatologists. It combines a three-model deep learning ensemble with an 8-agent QA pipeline and a conversational research assistant — all accessible through a black-and-red web UI or REST APIs.</p>
+
+      <div class="card-grid">
+        <div class="doc-card red-card">
+          <div class="card-icon">🧠</div>
+          <div class="card-title">3-Model Ensemble</div>
+          <div class="card-body">EfficientNetV2-S, ViT-Large, and ConvNeXt-Large combined via temperature-scaled weighted softmax.</div>
+        </div>
+        <div class="doc-card teal-card">
+          <div class="card-icon">🤖</div>
+          <div class="card-title">8 AI Agents</div>
+          <div class="card-body">Autonomous pipeline: self-healing → verification → active learning → drift → fairness → calibration.</div>
+        </div>
+        <div class="doc-card gold-card">
+          <div class="card-icon">💬</div>
+          <div class="card-title">Research Assistant</div>
+          <div class="card-body">Conversational AI on top of your data — answers questions about batches, models, and dermoscopy literature.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-icon">🏥</div>
+          <div class="card-title">FHIR + ICD-10</div>
+          <div class="card-body">Every scan exports a FHIR R4 DiagnosticReport with ICD-10 codes and NCCN treatment recommendations.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-icon">📊</div>
+          <div class="card-title">Fairness Reports</div>
+          <div class="card-body">Automated bias analysis across sex, age, and anatomical site. Fitzpatrick skin type via ISIC 2024 SLICE-3D.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-icon">🗺️</div>
+          <div class="card-title">Grad-CAM++ + TIxAI</div>
+          <div class="card-body">Per-image explanation maps with trustworthiness index scores showing model attention on lesion regions.</div>
+        </div>
+      </div>
+
+      <div class="callout callout-danger">
+        ⚠ SkinAnalytica is a research tool. Results require clinician review before any diagnostic or treatment decision. Not a medical device.
+      </div>
+    </section>
+
+    <!-- Quickstart -->
+    <section class="doc-section" id="quickstart">
+      <div class="section-eyebrow">Getting Started</div>
+      <h2>Quickstart</h2>
+      <p>Get SkinAnalytica running locally in three steps.</p>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Start the APIs</h4>
+            <div class="code-wrap">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+              <pre><span class="cm"># Terminal 1 — Core API</span>
+<span class="kw">cd</span> SkinAnalytica/api
+..\venv\Scripts\Activate.ps1
+<span class="kw">uvicorn</span> SA05_api:app --host 0.0.0.0 --port 8001 --reload
+
+<span class="cm"># Terminal 2 — Research Assistant</span>
+<span class="kw">cd</span> SkinAnalytica/assistant
+<span class="kw">uvicorn</span> assistant_api:app --port 8002
+
+<span class="cm"># Terminal 3 — Delivery</span>
+<span class="kw">cd</span> SkinAnalytica/delivery
+<span class="kw">uvicorn</span> delivery_api:app --port 8003</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>Open the UI</h4>
+            <div class="code-wrap">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+              <pre><span class="kw">start</span> <span class="str">skinanalytica_shell.html</span></pre>
+            </div>
+            <p>The shell auto-detects API status and shows a green dot when :8001 is live.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>Analyze an image</h4>
+            <div class="code-wrap">
+              <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+              <pre><span class="kw">import</span> requests
+
+<span class="kw">with</span> open(<span class="str">"lesion.jpg"</span>, <span class="str">"rb"</span>) <span class="kw">as</span> f:
+    res  = requests.post(<span class="str">"http://localhost:8001/analyze"</span>, files={<span class="str">"file"</span>: f})
+    data = res.json()
+
+print(data[<span class="str">"verdict"</span>])     <span class="cm"># CANCER_FLAGGED / REVIEW_REQUIRED / NORMAL</span>
+print(data[<span class="str">"confidence"</span>])  <span class="cm"># 0.882</span>
+print(data[<span class="str">"icd10"</span>])       <span class="cm"># C43.9</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info">
+        💡 Set <code>ANTHROPIC_API_KEY</code> in your environment to enable full knowledge-grounded answers in the Research Assistant.
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="doc-section" id="architecture">
+      <div class="section-eyebrow">Platform</div>
+      <h2>Architecture</h2>
+      <p>SkinAnalytica is designed to be modular — training, agents, assistant, and delivery are all independent layers that share a common output directory. 3D and longitudinal support will slot into the Input layer without touching anything below it.</p>
+
+      <div class="pipeline">
+        <div class="pipe-step"><div class="pipe-num">01</div><div class="pipe-box highlight">Input Layer<br><span style="font-size:0.65rem;color:var(--text3)">2D · (3D future)</span></div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">02</div><div class="pipe-box">Self-Healing<br><span style="font-size:0.65rem;color:var(--text3)">Agent</span></div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">03</div><div class="pipe-box highlight">Core Pipeline<br><span style="font-size:0.65rem;color:var(--text3)">SA01–SA06</span></div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">04</div><div class="pipe-box">Agent Layer<br><span style="font-size:0.65rem;color:var(--text3)">8 Agents</span></div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">05</div><div class="pipe-box">Research<br><span style="font-size:0.65rem;color:var(--text3)">Assistant</span></div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">06</div><div class="pipe-box">Delivery<br><span style="font-size:0.65rem;color:var(--text3)">Email · PDF · Push</span></div></div>
+      </div>
+
+      <h3>Services</h3>
+      <table class="doc-table">
+        <tr><th>Service</th><th>Port</th><th>File</th><th>Role</th></tr>
+        <tr><td>Core API</td><td class="auc-val">:8001</td><td>SA05_api.py</td><td>Analysis, reports, FHIR, Tula webhook</td></tr>
+        <tr><td>Research Assistant</td><td class="auc-val">:8002</td><td>assistant_api.py</td><td>Conversational AI, 20-question library</td></tr>
+        <tr><td>Delivery API</td><td class="auc-val">:8003</td><td>delivery_api.py</td><td>Email templates, PDF reports, PWA push</td></tr>
+      </table>
+    </section>
+
+    <!-- Models -->
+    <section class="doc-section" id="models">
+      <div class="section-eyebrow">Platform</div>
+      <h2>Models & Training</h2>
+      <p>Three architectures trained on ISIC 2018 + 2019 + 2020 (68,472 images, 7 classes). Each trained independently, combined via weighted ensemble.</p>
+
+      <table class="doc-table">
+        <tr><th>Model</th><th>Params</th><th>Img Size</th><th>Val AUC</th><th>Mel AUC</th><th>Epochs</th></tr>
+        <tr><td>tf_efficientnetv2_s</td><td>82M</td><td>224</td><td class="auc-val">0.9715</td><td>0.9098</td><td>30</td></tr>
+        <tr><td>vit_large_patch16_224</td><td>307M</td><td>224</td><td class="auc-val">0.9887</td><td>0.9743</td><td>17 (ES)</td></tr>
+        <tr><td>convnext_large</td><td>196M</td><td>224</td><td class="auc-val">0.9883</td><td>0.9706</td><td>27 (ES)</td></tr>
+      </table>
+
+      <h3>Training Strategy</h3>
+      <div class="card-grid card-grid-2">
+        <div class="doc-card">
+          <div class="card-title">Loss · EnhancedFocalLoss</div>
+          <div class="card-body">γ=2.0, α=0.75, label smoothing=0.1. Handles 58:1 class imbalance (NV:DF) without collapsing to majority class.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-title">Sampling · WeightedRandomSampler</div>
+          <div class="card-body">Per-class inverse-frequency weights. Rare classes (DF, VASC) seen proportionally more often per epoch.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-title">Augmentation · Mixup + CutMix</div>
+          <div class="card-body">α=0.2 for both. Hair removal via black-hat morphology before all augmentation (dermoscopy-specific).</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-title">Optimizer · AdamW</div>
+          <div class="card-body">Differential LR: backbone 5e-6, head 1e-4. Cosine annealing + warmup. Gradient clip 1.0. AMP enabled.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ensemble -->
+    <section class="doc-section" id="ensemble">
+      <div class="section-eyebrow">Platform</div>
+      <h2>Ensemble & Calibration</h2>
+      <p>The three models are combined via optimised weighted softmax, then temperature-scaled to correct for label-smoothing-induced underconfidence.</p>
+
+      <div class="metric-row">
+        <div class="metric-block"><div class="num">0.9609</div><div class="lbl">MelAUC</div></div>
+        <div class="metric-block"><div class="num">0.9316</div><div class="lbl">pAUC (TPR≥80%)</div></div>
+        <div class="metric-block"><div class="num">80.1%</div><div class="lbl">Sensitivity</div></div>
+        <div class="metric-block"><div class="num">95.5%</div><div class="lbl">Specificity</div></div>
+        <div class="metric-block"><div class="num">0.4095</div><div class="lbl">Temperature T</div></div>
+      </div>
+
+      <h3>Ensemble weights</h3>
+      <p>Weights are optimised on the validation set to maximise macro AUC. ViT-Large dominates (0.835) due to its superior individual performance.</p>
+      <table class="doc-table">
+        <tr><th>Model</th><th>Weight</th><th>Rationale</th></tr>
+        <tr><td>efficientnetv2-s</td><td class="auc-val">0.0511</td><td>Strong calibration, lower raw AUC — minority contributor</td></tr>
+        <tr><td>vit-large-patch16-224</td><td class="auc-val">0.8346</td><td>Highest individual AUC — majority contributor</td></tr>
+        <tr><td>convnext-large</td><td class="auc-val">0.1143</td><td>Near-ViT performance, adds diversity in error patterns</td></tr>
+      </table>
+
+      <div class="callout callout-warn">
+        ⚠ Temperature T=0.4095 (&lt;1) sharpens predictions. Label smoothing during training caused the ensemble to underestimate its own confidence — T scaling corrects this.
+      </div>
+    </section>
+
+    <!-- Explainability -->
+    <section class="doc-section" id="explainability">
+      <div class="section-eyebrow">Platform</div>
+      <h2>Explainability</h2>
+      <p>SA03 generates per-image Grad-CAM++ heatmaps and TIxAI trustworthiness scores using all three ensemble models.</p>
+
+      <div class="card-grid">
+        <div class="doc-card">
+          <div class="card-icon">🗺️</div>
+          <div class="card-title">Grad-CAM++</div>
+          <div class="card-body">Second-order gradient weighting for precise lesion localisation. More accurate than standard Grad-CAM on small discriminative regions.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-icon">📐</div>
+          <div class="card-title">TIxAI Score</div>
+          <div class="card-body">Trustworthiness Index: measures how well model attention aligns with the actual lesion vs background. Score &gt;0.7 = trustworthy.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-icon">🎲</div>
+          <div class="card-title">MC Dropout</div>
+          <div class="card-body">20-run Monte Carlo uncertainty estimate. High std = model is uncertain about this image region — useful for active learning.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Agents -->
+    <section class="doc-section" id="agents">
+      <div class="section-eyebrow">Agents</div>
+      <h2>Agent Pipeline</h2>
+      <p>Eight autonomous agents run in sequence on every batch. Each agent writes a JSON report to <code>outputs/</code> and hands off to the next.</p>
+
+      <div class="pipeline" style="flex-wrap:wrap;gap:0.5rem">
+        <div class="pipe-step"><div class="pipe-num">01</div><div class="pipe-box highlight">🧹 Self-Healing</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">02</div><div class="pipe-box">🔍 Verification</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">03</div><div class="pipe-box">🎯 Active Learning</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">04</div><div class="pipe-box">📈 Drift Monitor</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">05</div><div class="pipe-box">⚖️ Fairness</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">06</div><div class="pipe-box">🎛️ Calibration</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">07</div><div class="pipe-box">💡 Hypothesis</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-num">08</div><div class="pipe-box">📚 Literature Scout</div></div>
+      </div>
+    </section>
+
+    <!-- Agent list -->
+    <section class="doc-section" id="agent-list">
+      <h2>All 8 Agents</h2>
+      <table class="doc-table">
+        <tr><th>Agent</th><th>Trigger</th><th>Output</th></tr>
+        <tr><td>🧹 SelfHealingAgent</td><td>First, always</td><td>Removes corrupt, duplicate, OOD images</td></tr>
+        <tr><td>🔍 VerificationAgent</td><td>Auto on upload or manual</td><td>Per-image QA flags: OK / AMBIGUOUS / LOW_CONFIDENCE / ANNOTATION_CONFLICT</td></tr>
+        <tr><td>🎯 ActiveLearningAgent</td><td>After verification</td><td>Top-50 most uncertain images queued for re-annotation</td></tr>
+        <tr><td>📈 DriftMonitorAgent</td><td>After verification</td><td>KL divergence from training distribution, OOD alerts</td></tr>
+        <tr><td>⚖️ FairnessMonitorAgent</td><td>After verification</td><td>Sex / age / anatomical site disparity warnings</td></tr>
+        <tr><td>🎛️ CalibrationAgent</td><td>Weekly</td><td>ECE + overconfidence score + temperature recalibration recommendation</td></tr>
+        <tr><td>💡 HypothesisAgent</td><td>On demand</td><td>Plain-English hypothesis testing with p-values</td></tr>
+        <tr><td>📚 LiteratureScoutAgent</td><td>Weekly</td><td>PubMed + arXiv scan for new dermoscopy AI papers</td></tr>
+      </table>
+
+      <h3>Run the pipeline</h3>
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="kw">from</span> agents.agent_runner <span class="kw">import</span> AgentRunner
+
+runner  = AgentRunner()
+results = runner.run_pipeline(
+    image_folder = <span class="str">r"C:\...\SkinAnalytica\data\sa04_test_sample"</span>,
+    trigger      = <span class="str">"manual"</span>,
+    hypothesis   = <span class="str">"Does the model perform worse on head/neck lesions?"</span>,
+    session_name = <span class="str">"my_batch"</span>,
+)</pre>
+      </div>
+    </section>
+
+    <!-- Research Assistant -->
+    <section class="doc-section" id="research-assistant">
+      <div class="section-eyebrow">Agents</div>
+      <h2>Research Assistant</h2>
+      <p>Conversational AI on top of your platform data. Routes questions to the data layer (live JSON results) or Claude API (dermatology knowledge). Maintains session history.</p>
+
+      <div class="card-grid card-grid-2">
+        <div class="doc-card">
+          <div class="card-title">Data-grounded (Q01–Q10)</div>
+          <div class="card-body">Queries your actual saved outputs — batch results, drift reports, ensemble metrics, annotation conflicts.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-title">Knowledge-grounded (Q11–Q20)</div>
+          <div class="card-body">Answers from published dermatology literature and ISIC standards. Requires ANTHROPIC_API_KEY for full responses.</div>
+        </div>
+      </div>
+
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="kw">from</span> assistant.research_assistant <span class="kw">import</span> ResearchAssistant
+
+ra  = ResearchAssistant(session_id=<span class="str">"paul_meeting"</span>)
+ans = ra.ask(<span class="str">"What is our current MelAUC?"</span>)
+print(ans[<span class="str">"answer"</span>])
+
+<span class="cm"># Or use pre-built questions</span>
+ans = ra.ask_prebuilt(<span class="str">"Q06"</span>)  <span class="cm"># Ensemble metrics</span></pre>
+      </div>
+    </section>
+
+    <!-- API Reference -->
+    <section class="doc-section" id="api-ref">
+      <div class="section-eyebrow">API</div>
+      <h2>Core API · :8001</h2>
+      <p>FastAPI service — handles image analysis, report retrieval, FHIR export, and patient history.</p>
+
+      <table class="doc-table">
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/health</td><td>API status and version</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/models</td><td>Ensemble info and performance metrics</td></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/analyze</td><td>Single image → clinical report</td></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/analyze/batch</td><td>Multiple images in one call</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/report/{scan_id}</td><td>Retrieve previous scan result</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/report/{scan_id}/fhir</td><td>FHIR R4 DiagnosticReport</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/patient/{id}/history</td><td>All scans for a patient</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/research/sessions</td><td>List QA research sessions</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/audit/log</td><td>Recent scan audit trail</td></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/webhooks/tula</td><td>Tula bidirectional webhook</td></tr>
+      </table>
+    </section>
+
+    <section class="doc-section" id="assistant-api">
+      <h2>Research Assistant API · :8002</h2>
+      <table class="doc-table">
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/assistant/health</td><td>Status + Claude availability</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/assistant/questions</td><td>All 20 pre-built questions</td></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/assistant/ask</td><td>Free-form question</td></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/assistant/ask/prebuilt</td><td>Pre-built question by ID</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/assistant/history/{session_id}</td><td>Conversation history</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/assistant/data/{question_id}</td><td>Raw data layer query</td></tr>
+      </table>
+    </section>
+
+    <section class="doc-section" id="delivery-api">
+      <h2>Delivery API · :8003</h2>
+      <table class="doc-table">
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/delivery/email/qa-report</td><td>QA report email (Microsoft/Google)</td></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/delivery/email/weekly-digest</td><td>Weekly metrics digest</td></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/delivery/email/alert</td><td>Single alert email</td></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/delivery/report/research</td><td>Generate PDF research report</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/delivery/emails/{filename}</td><td>Preview email in browser</td></tr>
+        <tr><td><span class="tag tag-red">POST</span></td><td>/delivery/notify</td><td>Queue PWA push notification</td></tr>
+        <tr><td><span class="tag tag-teal">GET</span></td><td>/delivery/notifications</td><td>Get queued notifications</td></tr>
+      </table>
+    </section>
+
+    <!-- UI -->
+    <section class="doc-section" id="ui">
+      <div class="section-eyebrow">UI</div>
+      <h2>Shell + Pages</h2>
+      <p>The UI uses a shell/iframe architecture — one sticky nav shell loads each page as an iframe. Opening <code>skinanalytica_shell.html</code> is the entry point.</p>
+
+      <table class="doc-table">
+        <tr><th>Page</th><th>File</th><th>What it does</th></tr>
+        <tr><td>Home</td><td>pages/home.html</td><td>Hero, stats, sample analysis, features</td></tr>
+        <tr><td>Analyze</td><td>pages/analyze.html</td><td>Real image upload → live API → verdict + prob bars</td></tr>
+        <tr><td>Research</td><td>pages/research.html</td><td>Ensemble metrics + agent pipeline config</td></tr>
+        <tr><td>Assistant</td><td>pages/assistant.html</td><td>Chat UI with 10 quick questions</td></tr>
+        <tr><td>Agents</td><td>pages/agents.html</td><td>Pipeline visualization + simulate run</td></tr>
+        <tr><td>API</td><td>pages/api.html</td><td>Interactive API docs with Try-it buttons</td></tr>
+        <tr><td>Docs</td><td>skinanalytica_docs.html</td><td>This page</td></tr>
+      </table>
+    </section>
+
+    <!-- Classes -->
+    <section class="doc-section" id="classes">
+      <div class="section-eyebrow">Reference</div>
+      <h2>Lesion Classes</h2>
+      <table class="doc-table">
+        <tr><th>Code</th><th>Full Name</th><th>ICD-10</th><th>Malignant?</th></tr>
+        <tr><td>mel</td><td>Melanoma</td><td>C43.9</td><td><span class="tag tag-red">Yes</span></td></tr>
+        <tr><td>nv</td><td>Melanocytic Nevus</td><td>D22.9</td><td><span class="tag tag-muted">No</span></td></tr>
+        <tr><td>bcc</td><td>Basal Cell Carcinoma</td><td>C44.91</td><td><span class="tag tag-red">Yes</span></td></tr>
+        <tr><td>akiec</td><td>Actinic Keratosis / IEC</td><td>L57.0</td><td><span class="tag tag-red">Pre</span></td></tr>
+        <tr><td>bkl</td><td>Benign Keratosis</td><td>L82.1</td><td><span class="tag tag-muted">No</span></td></tr>
+        <tr><td>df</td><td>Dermatofibroma</td><td>D23.9</td><td><span class="tag tag-muted">No</span></td></tr>
+        <tr><td>vasc</td><td>Vascular Lesion</td><td>D18.01</td><td><span class="tag tag-muted">No</span></td></tr>
+      </table>
+    </section>
+
+    <!-- Fairness -->
+    <section class="doc-section" id="fairness">
+      <div class="section-eyebrow">Reference</div>
+      <h2>Fairness & Bias</h2>
+      <p>Bias analysis is run automatically by FairnessMonitorAgent and SA02b on every batch. Current coverage:</p>
+      <table class="doc-table">
+        <tr><th>Axis</th><th>Status</th><th>Gap (MelAUC)</th><th>Threshold</th></tr>
+        <tr><td>Sex (M vs F)</td><td><span class="tag tag-teal">✓ Available</span></td><td>0.0085</td><td>&lt;0.02 ✅</td></tr>
+        <tr><td>Age group</td><td><span class="tag tag-teal">✓ Available</span></td><td>0.0219</td><td>&lt;0.05 ✅</td></tr>
+        <tr><td>Anatomical site</td><td><span class="tag tag-teal">✓ Available</span></td><td>0.0303</td><td>&lt;0.05 ✅</td></tr>
+        <tr><td>Fitzpatrick type</td><td><span class="tag tag-muted">Pending</span></td><td>—</td><td>Needs ISIC 2024 SLICE-3D</td></tr>
+      </table>
+    </section>
+
+    <!-- Roadmap -->
+    <section class="doc-section" id="roadmap">
+      <div class="section-eyebrow">Reference</div>
+      <h2>Roadmap</h2>
+      <div class="card-grid">
+        <div class="doc-card teal-card">
+          <div class="card-title">3D + Longitudinal</div>
+          <div class="card-body">Separate SA01d_3D pipeline slots into Input layer. Shared agents and delivery unchanged. /analyze/3d endpoint only.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-title">Tula Integration</div>
+          <div class="card-body">Bidirectional Tula webhook + OpenClaw skill file. Clinician override feedback loop for drift detection.</div>
+        </div>
+        <div class="doc-card">
+          <div class="card-title">Fitzpatrick Report</div>
+          <div class="card-body">Requires ISIC 2024 SLICE-3D metadata. Available via ISIC API when dataset access is confirmed.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+function copyCode(btn) {
+  const pre  = btn.closest('.code-wrap').querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent);
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 1500);
+}
+
+// Sidebar scroll spy
+const sections = document.querySelectorAll('.doc-section');
+const sideLinks = document.querySelectorAll('.sidebar a');
+const navLinks  = document.querySelectorAll('.topnav-links a');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting) {
+      const id = e.target.id;
+      sideLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === `#${id}`);
+      });
+      navLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === `#${id}`);
+      });
+    }
+  });
+}, { rootMargin: '-52px 0px -60% 0px' });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(jupyter nbconvert *)",
+      "Bash(./venv/Scripts/python.exe _bench_hairremoval.py)",
+      "Bash(./venv/Scripts/python.exe _bench_hairremoval2.py)"
+    ]
+  }
+}

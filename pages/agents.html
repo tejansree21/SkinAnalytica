@@ -1,0 +1,229 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<style>
+  :root{--bg:#080808;--surface:#111111;--surface2:#1a1a1a;--border:#2a2a2a;--border2:#333333;
+        --red:#dc2626;--red2:#ef4444;--red3:#fca5a5;--green2:#4ade80;--amber2:#fbbf24;
+        --text:#f5f5f5;--muted:#525252;--subtle:#a3a3a3;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);
+       color:var(--text);min-height:100vh;padding:2rem;}
+  h1{font-size:1.5rem;font-weight:800;letter-spacing:-0.4px;margin-bottom:0.3rem;}
+  h1 span{color:var(--red2);}
+  .sub{color:var(--muted);font-size:0.82rem;margin-bottom:2rem;}
+  .agents-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem;}
+  .agent-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+              padding:1.1rem;transition:border-color 0.2s;}
+  .agent-card:hover{border-color:var(--border2);}
+  .agent-icon{font-size:1.6rem;margin-bottom:0.6rem;}
+  .agent-name{font-size:0.85rem;font-weight:700;margin-bottom:0.2rem;}
+  .agent-desc{font-size:0.73rem;color:var(--muted);line-height:1.5;margin-bottom:0.75rem;}
+  .agent-status{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;font-weight:600;}
+  .status-dot{width:6px;height:6px;border-radius:50%;}
+  .dot-ready{background:var(--green2);box-shadow:0 0 4px var(--green2);}
+  .dot-idle{background:var(--muted);}
+  .dot-run{background:var(--amber2);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  .pipeline-card{background:var(--surface);border:1px solid var(--border);
+                 border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;}
+  .pipeline-card h3{font-size:0.75rem;font-weight:700;color:var(--muted);
+                    text-transform:uppercase;letter-spacing:0.7px;margin-bottom:1.25rem;}
+  .pipeline-steps{display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:0.5rem;}
+  .p-step{flex-shrink:0;text-align:center;position:relative;}
+  .p-step-inner{background:var(--surface2);border:1px solid var(--border2);
+                border-radius:8px;padding:0.6rem 0.75rem;font-size:0.72rem;
+                font-weight:600;color:var(--subtle);white-space:nowrap;}
+  .p-step.active .p-step-inner{border-color:var(--red);color:var(--red2);
+                                background:rgba(220,38,38,0.06);}
+  .p-arrow{padding:0 0.4rem;color:var(--border2);font-size:0.9rem;flex-shrink:0;}
+  .log-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;}
+  .log-card h3{font-size:0.75rem;font-weight:700;color:var(--muted);
+               text-transform:uppercase;letter-spacing:0.7px;margin-bottom:1rem;}
+  #agent-log{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+             padding:0.85rem;font-family:monospace;font-size:0.73rem;color:var(--subtle);
+             height:180px;overflow-y:auto;line-height:1.7;white-space:pre-wrap;}
+  .btn{background:var(--red);color:#fff;border:none;padding:0.55rem 1.1rem;
+       border-radius:7px;font-size:0.8rem;font-weight:700;cursor:pointer;transition:background 0.2s;}
+  .btn:hover{background:var(--red2);}
+  .btn-outline{background:transparent;color:var(--subtle);border:1px solid var(--border2);
+               padding:0.45rem 0.9rem;border-radius:7px;font-size:0.78rem;
+               font-weight:600;cursor:pointer;transition:all 0.15s;}
+  .btn-outline:hover{border-color:var(--red);color:var(--text);}
+  .output-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;}
+  .out-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;}
+  .out-card h4{font-size:0.72rem;font-weight:700;color:var(--muted);
+               text-transform:uppercase;letter-spacing:0.6px;margin-bottom:0.65rem;}
+  .out-row{display:flex;justify-content:space-between;align-items:center;
+           padding:0.35rem 0;border-bottom:1px solid var(--border);font-size:0.78rem;}
+  .out-row:last-child{border-bottom:none;}
+  .out-key{color:var(--subtle);}
+  .out-val{font-weight:700;color:var(--text);}
+  .out-val.red{color:var(--red2);}
+  .out-val.green{color:var(--green2);}
+  .out-val.amber{color:var(--amber2);}
+  @media(max-width:900px){.agents-grid{grid-template-columns:repeat(2,1fr);}
+                          .output-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<h1>Agent <span>Dashboard</span></h1>
+<p class="sub">Monitor and run the 8-agent QA pipeline · All agents operate on your local data</p>
+
+<!-- Pipeline visualization -->
+<div class="pipeline-card">
+  <h3>Pipeline Order</h3>
+  <div class="pipeline-steps" id="pipeline-steps">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- Agent cards -->
+<div class="agents-grid" id="agents-grid"></div>
+
+<!-- Controls + log -->
+<div class="log-card">
+  <h3 style="display:flex;justify-content:space-between;align-items:center">
+    <span>Agent Log</span>
+    <div style="display:flex;gap:0.5rem">
+      <button class="btn-outline" onclick="clearLog()">Clear</button>
+      <button class="btn" onclick="simulateRun()">Simulate Pipeline Run</button>
+    </div>
+  </h3>
+  <div id="agent-log">Ready — click Simulate Pipeline Run or run agents from terminal</div>
+</div>
+
+<!-- Output summary -->
+<div class="output-grid" id="output-grid" style="display:none">
+  <div class="out-card">
+    <h4>Verification Results</h4>
+    <div id="ver-results"></div>
+  </div>
+  <div class="out-card">
+    <h4>Model Status</h4>
+    <div id="model-results"></div>
+  </div>
+</div>
+
+<script>
+const AGENTS = [
+  { id:'self_healing',    icon:'🧹', name:'Self-Healing',    desc:'Repairs corrupt, duplicate, OOD images before inference',    trigger:'First — always' },
+  { id:'verification',   icon:'🔍', name:'Verification',     desc:'QA + annotation conflict detection per batch',               trigger:'Auto or manual' },
+  { id:'active_learning',icon:'🎯', name:'Active Learning',  desc:'Top-50 most uncertain cases for re-annotation',             trigger:'After verification' },
+  { id:'drift_monitor',  icon:'📈', name:'Drift Monitor',    desc:'KL divergence + OOD detection vs training distribution',    trigger:'After verification' },
+  { id:'fairness',       icon:'⚖️', name:'Fairness Monitor', desc:'Sex/age/site disparity — flags performance gaps',           trigger:'After verification' },
+  { id:'calibration',    icon:'🎛️', name:'Calibration',     desc:'Weekly ECE check + temperature recalibration recommendation', trigger:'Weekly' },
+  { id:'hypothesis',     icon:'💡', name:'Hypothesis',       desc:'Plain-English analysis with statistical significance',       trigger:'On demand' },
+  { id:'literature',     icon:'📚', name:'Literature Scout', desc:'PubMed + arXiv monitoring for new dermoscopy AI papers',    trigger:'Weekly' },
+];
+
+// Render pipeline steps
+const ps = document.getElementById('pipeline-steps');
+AGENTS.forEach((a, i) => {
+  if(i > 0) { const arr=document.createElement('span'); arr.className='p-arrow'; arr.textContent='→'; ps.appendChild(arr); }
+  const div = document.createElement('div');
+  div.className = 'p-step';
+  div.id = `pstep-${a.id}`;
+  div.innerHTML = `<div class="p-step-inner">${a.icon} ${a.name}</div>`;
+  ps.appendChild(div);
+});
+
+// Render agent cards
+const grid = document.getElementById('agents-grid');
+AGENTS.forEach(a => {
+  const div = document.createElement('div');
+  div.className = 'agent-card';
+  div.id = `card-${a.id}`;
+  div.innerHTML = `
+    <div class="agent-icon">${a.icon}</div>
+    <div class="agent-name">${a.name}</div>
+    <div class="agent-desc">${a.desc}</div>
+    <div class="agent-status">
+      <div class="status-dot dot-idle" id="dot-${a.id}"></div>
+      <span id="status-${a.id}" style="color:var(--muted)">Idle · ${a.trigger}</span>
+    </div>`;
+  grid.appendChild(div);
+});
+
+function setAgent(id, state, msg) {
+  const dot    = document.getElementById(`dot-${id}`);
+  const status = document.getElementById(`status-${id}`);
+  const pstep  = document.getElementById(`pstep-${id}`);
+  const dotCls = {idle:'dot-idle',running:'dot-run',done:'dot-ready',skip:'dot-idle'};
+  if(dot)    dot.className = `status-dot ${dotCls[state]||'dot-idle'}`;
+  if(status) { status.textContent = msg; status.style.color = state==='done'?'var(--green2)':state==='running'?'var(--amber2)':'var(--muted)'; }
+  if(pstep)  pstep.className = `p-step ${state==='running'?'active':''}`;
+}
+
+function log(msg) {
+  const el = document.getElementById('agent-log');
+  el.textContent += msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('agent-log').textContent = '';
+  AGENTS.forEach(a => setAgent(a.id,'idle',`Idle · ${a.trigger}`));
+  document.getElementById('output-grid').style.display = 'none';
+}
+
+function delay(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+async function simulateRun() {
+  clearLog();
+  log('=== SKINANALYTICA AGENT PIPELINE ===');
+  log(`Started: ${new Date().toLocaleTimeString()}\n`);
+
+  const steps = [
+    { id:'self_healing',    t:600,  result:'200 clean · 0 issues · 0 corrupt · 0 duplicates' },
+    { id:'verification',    t:2000, result:'200 analyzed · 45 AMBIGUOUS · 5 ANNOTATION_CONFLICT' },
+    { id:'active_learning', t:400,  result:'Top-50 uncertain queued · est. AUC gain +0.0175' },
+    { id:'drift_monitor',   t:300,  result:'🟡 MEDIUM · KL=0.147 · Confidence shift detected' },
+    { id:'fairness',        t:300,  result:'✅ No significant disparities detected' },
+    { id:'calibration',     t:300,  result:'Insufficient labels — 0 labelled images' },
+    { id:'hypothesis',      t:500,  result:'No hypothesis provided — skipped' },
+    { id:'literature',      t:200,  result:'Skipped (skip_literature=True)' },
+  ];
+
+  for(const s of steps) {
+    const agent = AGENTS.find(a=>a.id===s.id);
+    log(`[→] ${agent.name}...`);
+    setAgent(s.id, 'running', 'Running...');
+    await delay(s.t);
+    setAgent(s.id, 'done', `Done · ${s.result.split('·')[0].trim()}`);
+    log(`[✓] ${agent.name}: ${s.result}\n`);
+  }
+
+  log('=== PIPELINE COMPLETE ===');
+  log(`Key findings:`);
+  log(`  Annotation conflicts : 5`);
+  log(`  Ambiguous cases      : 45`);
+  log(`  Drift severity       : MEDIUM`);
+  log(`  Est. AUC gain        : +0.0175`);
+
+  // Load real API metrics
+  try {
+    const res  = await fetch((window.parent?.SA_CONFIG?.API_BASE || 'http://localhost:8001') + '/models');
+    const data = await res.json();
+    const m    = data.metrics||{};
+    const fmt  = (v,pct=false) => v==null?'N/A':pct?(v*100).toFixed(1)+'%':v.toFixed?v.toFixed(4):v;
+    document.getElementById('output-grid').style.display = 'grid';
+    document.getElementById('ver-results').innerHTML = `
+      <div class="out-row"><span class="out-key">Annotation conflicts</span><span class="out-val red">5</span></div>
+      <div class="out-row"><span class="out-key">Ambiguous cases</span><span class="out-val amber">45</span></div>
+      <div class="out-row"><span class="out-key">Low confidence</span><span class="out-val">0</span></div>
+      <div class="out-row"><span class="out-key">Drift severity</span><span class="out-val amber">MEDIUM</span></div>
+      <div class="out-row"><span class="out-key">Est. AUC gain</span><span class="out-val green">+0.0175</span></div>`;
+    document.getElementById('model-results').innerHTML = `
+      <div class="out-row"><span class="out-key">MelAUC</span><span class="out-val red">${fmt(m.mel_auc)}</span></div>
+      <div class="out-row"><span class="out-key">pAUC</span><span class="out-val">${fmt(m.pauc_80)}</span></div>
+      <div class="out-row"><span class="out-key">Sensitivity</span><span class="out-val amber">${fmt(m.sensitivity,true)}</span></div>
+      <div class="out-row"><span class="out-key">Specificity</span><span class="out-val green">${fmt(m.specificity,true)}</span></div>
+      <div class="out-row"><span class="out-key">Temperature T</span><span class="out-val">${m.temperature||0.4095}</span></div>`;
+  } catch {
+    document.getElementById('output-grid').style.display = 'grid';
+    document.getElementById('model-results').innerHTML =
+      `<div style="color:var(--muted);font-size:0.78rem">API offline — start SA05_api.py on :8001</div>`;
+  }
+}
+</script>
+</body></html>

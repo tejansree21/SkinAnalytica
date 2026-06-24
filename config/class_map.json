@@ -1,0 +1,52 @@
+{
+  "ISIC_2018": [
+    "MEL",
+    "NV",
+    "BCC",
+    "AKIEC",
+    "BKL",
+    "DF",
+    "VASC"
+  ],
+  "ISIC_2019": [
+    "MEL",
+    "NV",
+    "BCC",
+    "AKIEC",
+    "BKL",
+    "DF",
+    "VASC",
+    "SCC\u2192AKIEC"
+  ],
+  "ISIC_2020": [
+    "MEL",
+    "NV (binary)"
+  ],
+  "unified": [
+    "MEL",
+    "NV",
+    "BCC",
+    "AKIEC",
+    "BKL",
+    "DF",
+    "VASC"
+  ],
+  "idx_to_class": {
+    "0": "MEL",
+    "1": "NV",
+    "2": "BCC",
+    "3": "AKIEC",
+    "4": "BKL",
+    "5": "DF",
+    "6": "VASC"
+  },
+  "class_to_idx": {
+    "MEL": 0,
+    "NV": 1,
+    "BCC": 2,
+    "AKIEC": 3,
+    "BKL": 4,
+    "DF": 5,
+    "VASC": 6
+  }
+}

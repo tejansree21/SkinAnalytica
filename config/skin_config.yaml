@@ -1,0 +1,183 @@
+# SkinAnalytica — Master Config
+# C:\Users\tejan\OneDrive\Desktop\drive\SkinAnalytica\configs\skin_config.yaml
+
+project:
+  name: SkinAnalytica
+  version: "1.0.0"
+  description: "ISIC-grade dermoscopy AI platform"
+  base_path: "C:\\Users\\tejan\\OneDrive\\Desktop\\drive\\SkinAnalytica"
+
+datasets:
+  ham10000:
+    path: "datasets\\ham10000"
+    images_part1: "datasets\\ham10000\\images_part1"
+    images_part2: "datasets\\ham10000\\images_part2"
+    metadata_csv: "datasets\\ham10000\\metadata\\HAM10000_metadata.csv"
+    n_classes: 7
+    split_by: "lesion_id"
+
+  isic_2019:
+    path: "datasets\\isic_2019"
+    images: "datasets\\isic_2019\\images"
+    labels_csv: "datasets\\isic_2019\\metadata\\ISIC_2019_Training_GroundTruth.csv"
+    n_classes: 8
+
+  isic_2020:
+    path: "datasets\\isic_2020"
+    images: "datasets\\isic_2020\\images"
+    labels_csv: "datasets\\isic_2020\\metadata\\train.csv"
+    n_classes: 2
+    target_col: "target"
+
+  ph2:
+    path: "datasets\\ph2"
+    images: "datasets\\ph2\\images"
+    use: "validation_only"
+
+classes:
+  ham10000:
+    - akiec
+    - bcc
+    - bkl
+    - df
+    - mel
+    - nv
+    - vasc
+  isic_2019:
+    - AK
+    - BCC
+    - BKL
+    - DF
+    - MEL
+    - NV
+    - SCC
+    - VASC
+  unified:
+    0: mel
+    1: nv
+    2: bcc
+    3: akiec
+    4: bkl
+    5: df
+    6: vasc
+
+class_imbalance:
+  ham10000_ratio: 58
+  isic_2020_ratio: 56
+  strategy: "weighted_sampler + enhanced_focal_loss"
+
+training:
+  device: "cuda"
+  precision: "fp16"
+  seed: 42
+  num_workers: 0
+  img_size: 224
+  val_fraction: 0.15
+
+  efficientnetv2:
+    model_name: "tf_efficientnetv2_l"
+    pretrained: true
+    batch_size: 16
+    epochs: 50
+    lr_backbone: 5.0e-6
+    lr_head: 1.0e-4
+    weight_decay: 1.0e-5
+    scheduler: "cosine"
+    early_stopping_patience: 8
+
+  vit:
+    model_name: "vit_large_patch16_224"
+    pretrained: true
+    batch_size: 8
+    epochs: 50
+    lr_backbone: 2.0e-6
+    lr_head: 5.0e-5
+    weight_decay: 1.0e-5
+    scheduler: "cosine"
+    early_stopping_patience: 8
+
+  convnext:
+    model_name: "convnext_large"
+    pretrained: true
+    batch_size: 16
+    epochs: 50
+    lr_backbone: 5.0e-6
+    lr_head: 1.0e-4
+    weight_decay: 1.0e-5
+    scheduler: "cosine"
+    early_stopping_patience: 8
+
+  ensemble:
+    strategy: "learned_weighted_average"
+    calibration: "temperature_scaling"
+
+augmentation:
+  train:
+    img_size: 224
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+    rotate_limit: 30
+    hue_shift: 10
+    sat_shift: 20
+    val_shift: 10
+    coarse_dropout_holes: [4, 8]
+    coarse_dropout_size: [10, 20]
+    mixup_alpha: 0.4
+    cutmix_alpha: 1.0
+    randaugment_n: 2
+    randaugment_m: 9
+    clahe_clip: 2.0
+    clahe_prob: 0.3
+    gaussian_blur_prob: 0.2
+    hair_removal: true
+  val:
+    img_size: 224
+    hair_removal: true
+
+loss:
+  type: "enhanced_focal_loss"
+  gamma: 2.0
+  alpha: 0.75
+  label_smoothing: 0.1
+
+metrics:
+  primary: "mel_auc"
+  secondary:
+    - "accuracy"
+    - "f1_macro"
+    - "sensitivity_mel"
+    - "specificity_mel"
+    - "false_negative_rate_mel"
+
+explainability:
+  gradcam_plus_plus: true
+  shap: true
+  tixai: true
+  mc_dropout_runs: 20
+
+inference:
+  thresholds:
+    mel: 0.45
+    bcc: 0.50
+    akiec: 0.50
+    default: 0.50
+  confidence_floor: 0.70
+
+research_module:
+  bulk_batch_size: 64
+  high_confidence_threshold: 0.90
+  medium_confidence_threshold: 0.70
+  disagreement_threshold: 0.85
+  demographic_fields:
+    - age
+    - sex
+    - localization
+    - dx_type
+  bias_significance_threshold: 0.05
+
+onnx:
+  opset_version: 17
+  quantization: "int8"
+  providers:
+    - "CUDAExecutionProvider"
+    - "CPUExecutionProvider"

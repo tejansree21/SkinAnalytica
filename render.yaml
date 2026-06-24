@@ -1,0 +1,58 @@
+# SkinAnalytica — render.yaml
+# Defines 3 services: Core API, Research Assistant, Delivery API
+
+services:
+
+  # ── Core Analysis API (:8001) ─────────────────────────────────
+  - type: web
+    name: skinanalytica-api
+    runtime: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python startup.py
+    startCommand: uvicorn SA05_api:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: SKINANALYTICA_MODEL_MODE
+        value: efficientnet
+      - key: MODEL_DIR
+        value: /app/models/production/onnx
+      - key: SKINANALYTICA_BASE
+        value: /app
+      - key: HF_MODEL_REPO
+        value: tejansree/skinanalytica-models
+      - key: SKINANALYTICA_FRONTEND_URL
+        value: https://skinanalytica.vercel.app
+      - key: ANTHROPIC_API_KEY
+        sync: false   # Set manually in Render dashboard
+    healthCheckPath: /health
+
+  # ── Research Assistant API (:8002) ────────────────────────────
+  - type: web
+    name: skinanalytica-assistant
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
+      cd assistant && uvicorn assistant_api:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: SKINANALYTICA_BASE
+        value: /app
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SKINANALYTICA_FRONTEND_URL
+        value: https://skinanalytica.vercel.app
+
+  # ── Delivery API (:8003) ──────────────────────────────────────
+  - type: web
+    name: skinanalytica-delivery
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
+      cd delivery && uvicorn delivery_api:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: SKINANALYTICA_BASE
+        value: /app
+      - key: SKINANALYTICA_FRONTEND_URL
+        value: https://skinanalytica.vercel.app

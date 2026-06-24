@@ -1,0 +1,613 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<style>
+  :root{--bg:#080808;--surface:#111111;--surface2:#1a1a1a;--border:#2a2a2a;--border2:#333333;
+        --red:#dc2626;--red2:#ef4444;--red3:#fca5a5;--green2:#4ade80;--amber2:#fbbf24;
+        --blue:#3b82f6;--purple:#8b5cf6;
+        --text:#f5f5f5;--muted:#525252;--subtle:#a3a3a3;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);
+       color:var(--text);min-height:100vh;display:flex;}
+
+  /* ── Sidebar ── */
+  .sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);
+           padding:1.5rem 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .sidebar-title{font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;
+                 letter-spacing:1px;padding:0 1.25rem;margin-bottom:0.75rem;}
+  .sidebar a{display:flex;align-items:center;gap:0.5rem;padding:0.45rem 1.25rem;
+             font-size:0.78rem;color:var(--subtle);text-decoration:none;
+             transition:all 0.15s;border-left:2px solid transparent;}
+  .sidebar a:hover{color:var(--text);background:var(--surface2);}
+  .sidebar a.active{color:var(--text);border-left-color:var(--red);background:rgba(220,38,38,0.06);}
+  .sidebar-section{margin-top:1.5rem;}
+  .method-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+  .dot-get{background:#16a34a;} .dot-post{background:#d97706;}
+  .dot-del{background:#dc2626;} .dot-patch{background:#7c3aed;}
+
+  /* ── Main content ── */
+  .content{flex:1;padding:2rem 2.5rem;max-width:900px;overflow-y:auto;}
+  h1{font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;margin-bottom:0.3rem;}
+  h1 span{color:var(--red2);}
+  .hero-sub{color:var(--muted);font-size:0.85rem;margin-bottom:0.75rem;}
+
+  /* ── Base URL bar ── */
+  .base-url{display:flex;align-items:center;gap:0.75rem;background:var(--surface);
+            border:1px solid var(--border2);border-radius:8px;padding:0.65rem 1rem;
+            margin-bottom:2rem;font-family:monospace;font-size:0.82rem;}
+  .base-label{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;
+              letter-spacing:0.5px;flex-shrink:0;}
+  .base-value{color:var(--red3);}
+  .copy-btn{margin-left:auto;background:var(--surface2);border:1px solid var(--border2);
+            color:var(--subtle);padding:0.25rem 0.65rem;border-radius:5px;
+            font-size:0.7rem;cursor:pointer;transition:all 0.15s;}
+  .copy-btn:hover{border-color:var(--red);color:var(--text);}
+
+  /* ── Section headers ── */
+  .section{margin-bottom:3rem;scroll-margin-top:1rem;}
+  .section-title{font-size:1.1rem;font-weight:800;letter-spacing:-0.3px;
+                 margin-bottom:1.25rem;padding-bottom:0.6rem;
+                 border-bottom:1px solid var(--border);display:flex;
+                 align-items:center;gap:0.6rem;}
+  .section-icon{font-size:1rem;}
+
+  /* ── Endpoint card ── */
+  .endpoint{background:var(--surface);border:1px solid var(--border);
+            border-radius:12px;margin-bottom:1rem;overflow:hidden;
+            transition:border-color 0.15s;}
+  .endpoint:hover{border-color:var(--border2);}
+  .ep-header{display:flex;align-items:center;gap:0.75rem;padding:0.9rem 1.25rem;
+             cursor:pointer;user-select:none;}
+  .method{font-size:0.68rem;font-weight:800;padding:0.2rem 0.6rem;border-radius:4px;
+          letter-spacing:0.5px;flex-shrink:0;font-family:monospace;}
+  .method-GET   {background:rgba(22,163,74,0.15);color:#4ade80;}
+  .method-POST  {background:rgba(217,119,6,0.15); color:#fbbf24;}
+  .method-DELETE{background:rgba(220,38,38,0.15); color:#fca5a5;}
+  .method-PATCH {background:rgba(124,58,237,0.15);color:#c4b5fd;}
+  .ep-path{font-family:monospace;font-size:0.85rem;font-weight:600;color:var(--text);}
+  .ep-desc{font-size:0.78rem;color:var(--muted);margin-left:auto;text-align:right;}
+  .ep-body{border-top:1px solid var(--border);padding:1.25rem;display:none;}
+  .ep-body.open{display:block;}
+
+  .ep-section{margin-bottom:1rem;}
+  .ep-section-title{font-size:0.68rem;font-weight:700;color:var(--muted);
+                    text-transform:uppercase;letter-spacing:0.6px;margin-bottom:0.5rem;}
+  .param-row{display:flex;align-items:flex-start;gap:0.75rem;padding:0.4rem 0;
+             border-bottom:1px solid var(--border);font-size:0.78rem;}
+  .param-row:last-child{border-bottom:none;}
+  .param-name{font-family:monospace;font-size:0.78rem;color:var(--red3);flex-shrink:0;width:140px;}
+  .param-type{color:var(--blue);font-size:0.72rem;flex-shrink:0;width:80px;}
+  .param-req{color:var(--amber2);font-size:0.65rem;flex-shrink:0;}
+  .param-desc{color:var(--subtle);}
+
+  /* ── Code blocks ── */
+  .code-block{position:relative;background:#0d0d0d;border:1px solid var(--border);
+              border-radius:8px;margin:0.75rem 0;overflow:hidden;}
+  .code-header{display:flex;align-items:center;justify-content:space-between;
+               padding:0.5rem 0.85rem;background:var(--surface2);
+               border-bottom:1px solid var(--border);}
+  .code-lang{font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+  .code-copy{font-size:0.65rem;color:var(--muted);cursor:pointer;transition:color 0.15s;
+             background:none;border:none;padding:0;}
+  .code-copy:hover{color:var(--text);}
+  pre{padding:1rem;font-family:'Fira Code','Cascadia Code',monospace;font-size:0.78rem;
+      line-height:1.7;overflow-x:auto;color:#e2e8f0;}
+  .kw{color:#f472b6;} .str{color:#86efac;} .num{color:#fb923c;}
+  .comment{color:#475569;} .key{color:#93c5fd;} .val{color:#fbbf24;}
+
+  /* ── Response badge ── */
+  .response-row{display:flex;align-items:center;gap:0.75rem;padding:0.45rem 0;
+                font-size:0.78rem;border-bottom:1px solid var(--border);}
+  .response-row:last-child{border-bottom:none;}
+  .status-badge{font-family:monospace;font-size:0.72rem;font-weight:700;
+                padding:0.15rem 0.5rem;border-radius:4px;flex-shrink:0;}
+  .s200{background:rgba(22,163,74,0.15);color:#4ade80;}
+  .s400{background:rgba(217,119,6,0.15);color:#fbbf24;}
+  .s404{background:rgba(220,38,38,0.15);color:#fca5a5;}
+  .s422{background:rgba(124,58,237,0.15);color:#c4b5fd;}
+
+  /* ── Try it button ── */
+  .try-btn{background:var(--red);color:#fff;border:none;padding:0.5rem 1rem;
+           border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;
+           transition:background 0.15s;margin-top:0.75rem;}
+  .try-btn:hover{background:var(--red2);}
+  .try-result{background:#0d0d0d;border:1px solid var(--border);border-radius:8px;
+              padding:1rem;margin-top:0.75rem;font-family:monospace;font-size:0.75rem;
+              color:#86efac;white-space:pre-wrap;max-height:200px;overflow-y:auto;display:none;}
+  .try-result.show{display:block;}
+
+  /* ── Auth section ── */
+  .info-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+             padding:1.1rem 1.25rem;margin-bottom:1rem;}
+  .info-card h4{font-size:0.82rem;font-weight:700;margin-bottom:0.4rem;}
+  .info-card p{font-size:0.78rem;color:var(--muted);line-height:1.6;}
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:var(--surface);}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-title">SkinAnalytica API</div>
+  <a href="#overview" class="active">Overview</a>
+  <a href="#auth">Authentication</a>
+
+  <div class="sidebar-section">
+    <div class="sidebar-title">Core</div>
+    <a href="#health"><span class="method-dot dot-get"></span>Health</a>
+    <a href="#models"><span class="method-dot dot-get"></span>Models</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-title">Analysis</div>
+    <a href="#analyze"><span class="method-dot dot-post"></span>Analyze</a>
+    <a href="#analyze-batch"><span class="method-dot dot-post"></span>Analyze Batch</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-title">Reports</div>
+    <a href="#report"><span class="method-dot dot-get"></span>Get Report</a>
+    <a href="#fhir"><span class="method-dot dot-get"></span>FHIR Export</a>
+    <a href="#patient"><span class="method-dot dot-get"></span>Patient History</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-title">Research</div>
+    <a href="#sessions"><span class="method-dot dot-get"></span>Sessions</a>
+    <a href="#audit"><span class="method-dot dot-get"></span>Audit Log</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-title">Integrations</div>
+    <a href="#tula"><span class="method-dot dot-post"></span>Tula Webhook</a>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="content">
+  <h1>SkinAnalytica <span>API</span></h1>
+  <p class="hero-sub">v1.1.0 · REST · JSON · ISIC-grade dermoscopy intelligence</p>
+
+  <div class="base-url">
+    <span class="base-label">Base URL</span>
+    <span class="base-value" id="base-url-text">http://localhost:8001</span>
+    <button class="copy-btn" onclick="copyText('http://localhost:8001')">Copy</button>
+    <div id="api-live" style="font-size:0.7rem;color:var(--muted)">checking...</div>
+  </div>
+
+  <!-- Overview -->
+  <div class="section" id="overview">
+    <div class="section-title"><span class="section-icon">📋</span>Overview</div>
+    <div class="info-card">
+      <h4>About this API</h4>
+      <p>The SkinAnalytica API provides AI-assisted dermoscopy analysis using a three-model ensemble
+      (EfficientNetV2-S + ViT-Large + ConvNeXt-Large). It returns clinical verdicts, ICD-10 codes,
+      NCCN treatment recommendations, and FHIR-compatible reports for each image.</p>
+    </div>
+    <div class="info-card">
+      <h4>Models</h4>
+      <p>EfficientNetV2-S (AUC 0.9715) · ViT-Large (AUC 0.9887) · ConvNeXt-Large (AUC 0.9883)<br>
+      Ensemble MelAUC: 0.9609 · pAUC: 0.9316 · Sensitivity: 80.1% · Specificity: 95.5%<br>
+      Temperature scaling T=0.4095 · Hair removal preprocessing · 7 lesion classes</p>
+    </div>
+    <div class="info-card">
+      <h4>Classes</h4>
+      <p><code style="color:var(--red3)">mel</code> Melanoma ·
+         <code style="color:var(--red3)">nv</code> Melanocytic Nevus ·
+         <code style="color:var(--red3)">bcc</code> Basal Cell Carcinoma ·
+         <code style="color:var(--red3)">akiec</code> Actinic Keratosis ·
+         <code style="color:var(--red3)">bkl</code> Benign Keratosis ·
+         <code style="color:var(--red3)">df</code> Dermatofibroma ·
+         <code style="color:var(--red3)">vasc</code> Vascular Lesion</p>
+    </div>
+  </div>
+
+  <!-- Auth -->
+  <div class="section" id="auth">
+    <div class="section-title"><span class="section-icon">🔐</span>Authentication</div>
+    <div class="info-card">
+      <h4>Current: No authentication required</h4>
+      <p>This version of the API is open for local research use. All endpoints are accessible without
+      any API key or token. For hospital deployment or multi-tenant use, contact the SkinAnalytica team.</p>
+    </div>
+  </div>
+
+  <!-- Health -->
+  <div class="section" id="health">
+    <div class="section-title"><span class="section-icon">💚</span>Health</div>
+
+    <div class="endpoint" id="ep-health">
+      <div class="ep-header" onclick="toggle('ep-health')">
+        <span class="method method-GET">GET</span>
+        <span class="ep-path">/health</span>
+        <span class="ep-desc">API status + model loaded state</span>
+      </div>
+      <div class="ep-body">
+        <div class="ep-section">
+          <div class="ep-section-title">Response</div>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">JSON</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>{
+  <span class="key">"status"</span>: <span class="str">"ok"</span>,
+  <span class="key">"model"</span>:  <span class="str">"loaded"</span>,
+  <span class="key">"version"</span>: <span class="str">"1.1.0"</span>,
+  <span class="key">"timestamp"</span>: <span class="str">"2026-06-24T01:44:52.227475"</span>
+}</pre>
+          </div>
+        </div>
+        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/health',null,'try-health')">Try it →</button>
+        <div class="try-result" id="try-health"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Models -->
+  <div class="section" id="models">
+    <div class="section-title"><span class="section-icon">🧠</span>Models</div>
+    <div class="endpoint" id="ep-models">
+      <div class="ep-header" onclick="toggle('ep-models')">
+        <span class="method method-GET">GET</span>
+        <span class="ep-path">/models</span>
+        <span class="ep-desc">Ensemble info + performance metrics</span>
+      </div>
+      <div class="ep-body">
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">JSON</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+          <pre>{
+  <span class="key">"ensemble"</span>: <span class="str">"EfficientNetV2-S + ViT-L/16 + ConvNeXt-Large"</span>,
+  <span class="key">"n_classes"</span>: <span class="num">7</span>,
+  <span class="key">"classes"</span>: [<span class="str">"mel"</span>, <span class="str">"nv"</span>, <span class="str">"bcc"</span>, <span class="str">"akiec"</span>, <span class="str">"bkl"</span>, <span class="str">"df"</span>, <span class="str">"vasc"</span>],
+  <span class="key">"metrics"</span>: {
+    <span class="key">"mel_auc"</span>: <span class="num">0.9609</span>,
+    <span class="key">"pauc_80"</span>: <span class="num">0.9316</span>,
+    <span class="key">"sensitivity"</span>: <span class="num">0.801</span>,
+    <span class="key">"specificity"</span>: <span class="num">0.955</span>,
+    <span class="key">"temperature"</span>: <span class="num">0.4095</span>
+  },
+  <span class="key">"loaded"</span>: <span class="kw">true</span>
+}</pre>
+        </div>
+        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/models',null,'try-models')">Try it →</button>
+        <div class="try-result" id="try-models"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analyze -->
+  <div class="section" id="analyze">
+    <div class="section-title"><span class="section-icon">🔬</span>Analyze</div>
+
+    <div class="endpoint" id="ep-analyze">
+      <div class="ep-header" onclick="toggle('ep-analyze')">
+        <span class="method method-POST">POST</span>
+        <span class="ep-path">/analyze</span>
+        <span class="ep-desc">Single image → full clinical report</span>
+      </div>
+      <div class="ep-body">
+        <div class="ep-section">
+          <div class="ep-section-title">Request · multipart/form-data</div>
+          <div class="param-row"><span class="param-name">file</span><span class="param-type">binary</span><span class="param-req">required</span><span class="param-desc">Dermoscopy image (JPEG/PNG/TIFF/BMP, max 20MB)</span></div>
+          <div class="param-row"><span class="param-name">cancer_type</span><span class="param-type">string</span><span class="param-req">optional</span><span class="param-desc">Hint: mel, nv, bcc, akiec, bkl, df, vasc</span></div>
+          <div class="param-row"><span class="param-name">patient_age</span><span class="param-type">integer</span><span class="param-req">optional</span><span class="param-desc">Patient age in years</span></div>
+          <div class="param-row"><span class="param-name">patient_sex</span><span class="param-type">string</span><span class="param-req">optional</span><span class="param-desc">male / female</span></div>
+          <div class="param-row"><span class="param-name">patient_id</span><span class="param-type">string</span><span class="param-req">optional</span><span class="param-desc">For linking to patient history</span></div>
+        </div>
+
+        <div class="ep-section">
+          <div class="ep-section-title">Example · cURL</div>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="kw">curl</span> -X POST http://localhost:8001/analyze \
+  -F <span class="str">"file=@/path/to/lesion.jpg"</span> \
+  -F <span class="str">"patient_age=52"</span> \
+  -F <span class="str">"patient_sex=female"</span></pre>
+          </div>
+        </div>
+
+        <div class="ep-section">
+          <div class="ep-section-title">Example · Python</div>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="kw">import</span> requests
+
+<span class="kw">with</span> open(<span class="str">"lesion.jpg"</span>, <span class="str">"rb"</span>) <span class="kw">as</span> f:
+    res = requests.post(
+        <span class="str">"http://localhost:8001/analyze"</span>,
+        files={<span class="str">"file"</span>: f},
+        data={<span class="str">"patient_age"</span>: <span class="num">52</span>, <span class="str">"patient_sex"</span>: <span class="str">"female"</span>}
+    )
+data = res.json()
+print(data[<span class="str">"verdict"</span>], data[<span class="str">"confidence"</span>])</pre>
+          </div>
+        </div>
+
+        <div class="ep-section">
+          <div class="ep-section-title">Response</div>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">JSON</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>{
+  <span class="key">"scan_id"</span>:        <span class="str">"a3f9c2"</span>,
+  <span class="key">"cancer_type"</span>:    <span class="str">"mel"</span>,
+  <span class="key">"verdict"</span>:        <span class="str">"CANCER_FLAGGED"</span>,
+  <span class="key">"cancer_prob"</span>:    <span class="num">0.8821</span>,
+  <span class="key">"tumor_type"</span>:     <span class="str">"Melanoma"</span>,
+  <span class="key">"confidence"</span>:     <span class="num">0.882</span>,
+  <span class="key">"mel_score"</span>:      <span class="num">0.882</span>,
+  <span class="key">"who_grade"</span>:      <span class="kw">null</span>,
+  <span class="key">"priority"</span>:       <span class="num">1</span>,
+  <span class="key">"icd10"</span>:          <span class="str">"C43.9"</span>,
+  <span class="key">"treatment_recs"</span>: [<span class="str">"Urgent dermatology referral"</span>, <span class="str">"Wide local excision"</span>],
+  <span class="key">"report_text"</span>:    <span class="str">"..."</span>,
+  <span class="key">"plain_summary"</span>:  <span class="str">"High confidence melanoma detected..."</span>,
+  <span class="key">"latency_ms"</span>:     <span class="num">312</span>,
+  <span class="key">"timestamp"</span>:      <span class="str">"2026-06-24T02:00:00"</span>,
+  <span class="key">"probs"</span>: {
+    <span class="key">"mel"</span>: <span class="num">0.8821</span>, <span class="key">"nv"</span>: <span class="num">0.0412</span>, <span class="key">"bcc"</span>: <span class="num">0.0312</span>,
+    <span class="key">"akiec"</span>: <span class="num">0.0201</span>, <span class="key">"bkl"</span>: <span class="num">0.0154</span>, <span class="key">"df"</span>: <span class="num">0.006</span>, <span class="key">"vasc"</span>: <span class="num">0.004</span>
+  }
+}</pre>
+          </div>
+        </div>
+
+        <div class="ep-section">
+          <div class="ep-section-title">Response codes</div>
+          <div class="response-row"><span class="status-badge s200">200</span><span>Successful analysis</span></div>
+          <div class="response-row"><span class="status-badge s400">400</span><span>Invalid image format or file too large</span></div>
+          <div class="response-row"><span class="status-badge s422">422</span><span>Validation error in request parameters</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analyze batch -->
+    <div class="endpoint" id="ep-analyze-batch">
+      <div class="ep-header" onclick="toggle('ep-analyze-batch')">
+        <span class="method method-POST">POST</span>
+        <span class="ep-path">/analyze/batch</span>
+        <span class="ep-desc">Multiple images in one call</span>
+      </div>
+      <div class="ep-body">
+        <div class="ep-section">
+          <div class="ep-section-title">Request · multipart/form-data</div>
+          <div class="param-row"><span class="param-name">files</span><span class="param-type">binary[]</span><span class="param-req">required</span><span class="param-desc">Array of dermoscopy images</span></div>
+          <div class="param-row"><span class="param-name">cancer_type</span><span class="param-type">string</span><span class="param-req">optional</span><span class="param-desc">Apply same hint to all images</span></div>
+        </div>
+        <div class="ep-section">
+          <div class="ep-section-title">Example · Python</div>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>files = [(<span class="str">"files"</span>, open(p, <span class="str">"rb"</span>)) <span class="kw">for</span> p <span class="kw">in</span> image_paths]
+res   = requests.post(<span class="str">"http://localhost:8001/analyze/batch"</span>, files=files)
+data  = res.json()
+print(f<span class="str">"Flagged: {data['flagged_count']}/{data['total']}"</span>)</pre>
+          </div>
+        </div>
+        <div class="ep-section">
+          <div class="ep-section-title">Response</div>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">JSON</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>{
+  <span class="key">"total"</span>:         <span class="num">10</span>,
+  <span class="key">"flagged_count"</span>: <span class="num">2</span>,
+  <span class="key">"review_count"</span>:  <span class="num">1</span>,
+  <span class="key">"results"</span>: [ <span class="comment">/* array of individual scan results */</span> ],
+  <span class="key">"timestamp"</span>: <span class="str">"2026-06-24T02:00:00"</span>
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports -->
+  <div class="section" id="report">
+    <div class="section-title"><span class="section-icon">📄</span>Reports</div>
+
+    <div class="endpoint" id="ep-report">
+      <div class="ep-header" onclick="toggle('ep-report')">
+        <span class="method method-GET">GET</span>
+        <span class="ep-path">/report/{scan_id}</span>
+        <span class="ep-desc">Retrieve a previous scan result</span>
+      </div>
+      <div class="ep-body">
+        <div class="ep-section">
+          <div class="ep-section-title">Path parameters</div>
+          <div class="param-row"><span class="param-name">scan_id</span><span class="param-type">string</span><span class="param-req">required</span><span class="param-desc">Scan ID returned by /analyze</span></div>
+        </div>
+        <div class="ep-section">
+          <div class="ep-section-title">Query parameters</div>
+          <div class="param-row"><span class="param-name">format</span><span class="param-type">string</span><span class="param-req">optional</span><span class="param-desc">json (default) or pdf</span></div>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="kw">curl</span> http://localhost:8001/report/<span class="val">a3f9c2</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint" id="ep-fhir">
+      <div class="ep-header" onclick="toggle('ep-fhir')">
+        <span class="method method-GET">GET</span>
+        <span class="ep-path">/report/{scan_id}/fhir</span>
+        <span class="ep-desc">FHIR R4 DiagnosticReport export</span>
+      </div>
+      <div class="ep-body">
+        <div class="ep-section">
+          <div class="ep-section-title">Response · FHIR DiagnosticReport</div>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">JSON</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>{
+  <span class="key">"resourceType"</span>: <span class="str">"DiagnosticReport"</span>,
+  <span class="key">"status"</span>:       <span class="str">"final"</span>,
+  <span class="key">"code"</span>: { <span class="key">"text"</span>: <span class="str">"Dermoscopy AI Analysis"</span> },
+  <span class="key">"conclusion"</span>:   <span class="str">"CANCER_FLAGGED: Melanoma (88.2%)"</span>,
+  <span class="key">"conclusionCode"</span>: [{
+    <span class="key">"coding"</span>: [{ <span class="key">"system"</span>: <span class="str">"http://hl7.org/fhir/sid/icd-10"</span>, <span class="key">"code"</span>: <span class="str">"C43.9"</span> }]
+  }]
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint" id="ep-patient">
+      <div class="ep-header" onclick="toggle('ep-patient')">
+        <span class="method method-GET">GET</span>
+        <span class="ep-path">/patient/{patient_id}/history</span>
+        <span class="ep-desc">All scans for a patient (longitudinal)</span>
+      </div>
+      <div class="ep-body">
+        <div class="param-row"><span class="param-name">patient_id</span><span class="param-type">string</span><span class="param-req">required</span><span class="param-desc">Patient identifier used during /analyze</span></div>
+        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/patient/demo123/history',null,'try-patient')">Try it →</button>
+        <div class="try-result" id="try-patient"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Research -->
+  <div class="section" id="sessions">
+    <div class="section-title"><span class="section-icon">🔭</span>Research</div>
+
+    <div class="endpoint" id="ep-sessions">
+      <div class="ep-header" onclick="toggle('ep-sessions')">
+        <span class="method method-GET">GET</span>
+        <span class="ep-path">/research/sessions</span>
+        <span class="ep-desc">List completed QA research sessions</span>
+      </div>
+      <div class="ep-body">
+        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/research/sessions',null,'try-sessions')">Try it →</button>
+        <div class="try-result" id="try-sessions"></div>
+      </div>
+    </div>
+
+    <div class="endpoint" id="ep-audit">
+      <div class="ep-header" onclick="toggle('ep-audit')">
+        <span class="method method-GET">GET</span>
+        <span class="ep-path">/audit/log</span>
+        <span class="ep-desc">Recent scan audit trail</span>
+      </div>
+      <div class="ep-body">
+        <div class="param-row"><span class="param-name">limit</span><span class="param-type">integer</span><span class="param-req">optional</span><span class="param-desc">Max entries to return (default 50)</span></div>
+        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/audit/log?limit=10',null,'try-audit')">Try it →</button>
+        <div class="try-result" id="try-audit"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tula -->
+  <div class="section" id="tula">
+    <div class="section-title"><span class="section-icon">🔗</span>Integrations</div>
+    <div class="endpoint" id="ep-tula">
+      <div class="ep-header" onclick="toggle('ep-tula')">
+        <span class="method method-POST">POST</span>
+        <span class="ep-path">/webhooks/tula</span>
+        <span class="ep-desc">Tula bidirectional event webhook</span>
+      </div>
+      <div class="ep-body">
+        <div class="ep-section">
+          <div class="ep-section-title">Events</div>
+          <div class="param-row"><span class="param-name">scan_uploaded</span><span class="param-type">event</span><span class="param-req"></span><span class="param-desc">Tula notifies SkinAnalytica — triggers auto-analysis</span></div>
+          <div class="param-row"><span class="param-name">clinician_approved</span><span class="param-type">event</span><span class="param-req"></span><span class="param-desc">Clinician approved AI verdict in Tula</span></div>
+          <div class="param-row"><span class="param-name">clinician_overridden</span><span class="param-type">event</span><span class="param-req"></span><span class="param-desc">Clinician overrode verdict — logged for drift detection</span></div>
+        </div>
+        <div class="ep-section">
+          <div class="ep-section-title">Example payload</div>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">JSON</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>{
+  <span class="key">"event"</span>:       <span class="str">"scan_uploaded"</span>,
+  <span class="key">"scan_id"</span>:     <span class="str">"tula_scan_001"</span>,
+  <span class="key">"patient_id"</span>:  <span class="str">"patient_abc"</span>,
+  <span class="key">"image_url"</span>:   <span class="str">"https://tula.example.com/scan/001.jpg"</span>,
+  <span class="key">"timestamp"</span>:   <span class="str">"2026-06-24T02:00:00Z"</span>
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Toggle endpoint body ──────────────────────────────────────────
+function toggle(id) {
+  const body = document.querySelector(`#${id} .ep-body`);
+  body.classList.toggle('open');
+}
+
+// ── Copy helpers ──────────────────────────────────────────────────
+function copyText(text) {
+  navigator.clipboard.writeText(text);
+  document.querySelector('.copy-btn').textContent = 'Copied!';
+  setTimeout(() => document.querySelector('.copy-btn').textContent = 'Copy', 1500);
+}
+
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  const text = pre.textContent;
+  navigator.clipboard.writeText(text);
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 1500);
+}
+
+// ── Try it ────────────────────────────────────────────────────────
+async function tryEndpoint(method, url, body, resultId) {
+  const el = document.getElementById(resultId);
+  el.classList.add('show');
+  el.textContent = 'Sending request...';
+  try {
+    const opts = { method };
+    if(body) { opts.body = JSON.stringify(body); opts.headers = {'Content-Type':'application/json'}; }
+    const res  = await fetch(url, opts);
+    const data = await res.json();
+    el.textContent = JSON.stringify(data, null, 2);
+    el.style.color = res.ok ? '#86efac' : '#fca5a5';
+  } catch(e) {
+    el.textContent = `Error: ${e.message}\n\nMake sure SA05_api.py is running on :8001`;
+    el.style.color = '#fca5a5';
+  }
+}
+
+// ── Sidebar active state on scroll ───────────────────────────────
+const sections = document.querySelectorAll('.section');
+const links    = document.querySelectorAll('.sidebar a');
+const content  = document.querySelector('.content');
+
+content.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if(s.offsetTop - 100 <= content.scrollTop) current = s.id;
+  });
+  links.forEach(a => {
+    a.classList.remove('active');
+    if(a.getAttribute('href') === `#${current}`) a.classList.add('active');
+  });
+});
+
+links.forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const id = a.getAttribute('href').replace('#','');
+    document.getElementById(id)?.scrollIntoView({behavior:'smooth'});
+  });
+});
+
+// ── API health check ──────────────────────────────────────────────
+async function checkApi() {
+  const el = document.getElementById('api-live');
+  try {
+    const res = await fetch('http://localhost:8001/health', {signal:AbortSignal.timeout(3000)});
+    const d   = await res.json();
+    el.innerHTML = d.status==='ok'
+      ? `<span style="color:var(--green2)">● live</span>`
+      : `<span style="color:var(--red2)">● error</span>`;
+  } catch {
+    el.innerHTML = `<span style="color:var(--muted)">● offline</span>`;
+  }
+}
+checkApi();
+</script>
+</body></html>

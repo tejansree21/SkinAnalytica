@@ -1,0 +1,252 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<style>
+  :root{--bg:#080808;--surface:#111111;--surface2:#1a1a1a;--border:#2a2a2a;--border2:#333333;
+        --red:#dc2626;--red2:#ef4444;--red3:#fca5a5;--green2:#4ade80;--amber2:#fbbf24;
+        --text:#f5f5f5;--muted:#525252;--subtle:#a3a3a3;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);
+       min-height:100vh;padding:2rem;}
+  h1{font-size:1.5rem;font-weight:800;letter-spacing:-0.4px;margin-bottom:0.3rem;}
+  h1 span{color:var(--red2);}
+  .sub{color:var(--muted);font-size:0.82rem;margin-bottom:2rem;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;}
+  .card h3{font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;
+            letter-spacing:0.7px;margin-bottom:1rem;}
+  label{display:block;font-size:0.78rem;color:var(--subtle);margin-bottom:0.35rem;font-weight:600;}
+  input[type=text]{width:100%;background:var(--surface2);border:1px solid var(--border2);
+                   border-radius:7px;padding:0.55rem 0.85rem;font-size:0.82rem;
+                   color:var(--text);font-family:inherit;outline:none;margin-bottom:0.85rem;
+                   transition:border-color 0.15s;}
+  input[type=text]:focus{border-color:var(--red);}
+  input[type=text]::placeholder{color:var(--muted);}
+  .btn{background:var(--red);color:#fff;border:none;padding:0.6rem 1.25rem;
+       border-radius:7px;font-size:0.82rem;font-weight:700;cursor:pointer;transition:background 0.2s;}
+  .btn:hover{background:var(--red2);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn-sm{padding:0.4rem 0.85rem;font-size:0.75rem;}
+  .toggle-row{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.85rem;}
+  .toggle{position:relative;width:38px;height:20px;flex-shrink:0;}
+  .toggle input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:var(--border2);border-radius:10px;
+          cursor:pointer;transition:background 0.2s;}
+  .slider:before{content:'';position:absolute;width:14px;height:14px;
+                 left:3px;top:3px;background:#fff;border-radius:50%;transition:transform 0.2s;}
+  input:checked + .slider{background:var(--red);}
+  input:checked + .slider:before{transform:translateX(18px);}
+  .toggle-label{font-size:0.78rem;color:var(--subtle);}
+  .metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.6rem;}
+  .metric{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.75rem;}
+  .metric .val{font-size:1.3rem;font-weight:800;color:var(--red2);}
+  .metric .lbl{font-size:0.65rem;color:var(--muted);margin-top:0.15rem;text-transform:uppercase;letter-spacing:0.4px;}
+  #log{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+       padding:1rem;font-family:monospace;font-size:0.75rem;color:var(--subtle);
+       height:200px;overflow-y:auto;line-height:1.7;white-space:pre-wrap;}
+  #log .step-done{color:var(--green2);}
+  #log .step-run{color:var(--red2);}
+  #log .step-err{color:#f87171;}
+  .flag{display:flex;align-items:flex-start;gap:0.5rem;padding:0.6rem 0.85rem;
+        border-radius:7px;margin-bottom:0.5rem;font-size:0.78rem;border-left:3px solid;}
+  .flag-ok  {background:rgba(74,222,128,0.06);border-color:var(--green2);color:var(--green2);}
+  .flag-warn{background:rgba(251,191,36,0.06);border-color:var(--amber2);color:var(--amber2);}
+  .flag-high{background:rgba(220,38,38,0.08);border-color:var(--red2);color:var(--red3);}
+  .full-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+             padding:1.25rem;margin-bottom:1.25rem;}
+  .full-card h3{font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;
+                letter-spacing:0.7px;margin-bottom:1rem;}
+  @media(max-width:680px){.grid{grid-template-columns:1fr;}.metric-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<h1>Research <span>Session</span></h1>
+<p class="sub">Run bulk analysis, agent pipeline, and QA reports on ISIC image folders</p>
+
+<!-- Quick metrics from saved results -->
+<div class="full-card">
+  <h3>Current Ensemble Metrics</h3>
+  <div class="metric-grid" id="metrics-grid">
+    <div class="metric"><div class="val">—</div><div class="lbl">MelAUC</div></div>
+    <div class="metric"><div class="val">—</div><div class="lbl">pAUC</div></div>
+    <div class="metric"><div class="val">—</div><div class="lbl">Sensitivity</div></div>
+    <div class="metric"><div class="val">—</div><div class="lbl">Specificity</div></div>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- Session config -->
+  <div class="card">
+    <h3>Session Configuration</h3>
+
+    <label>Image Folder Path</label>
+    <input type="text" id="img-folder"
+      value="C:\Users\tejan\OneDrive\Desktop\drive\SkinAnalytica\data\sa04_test_sample"
+      placeholder="C:\path\to\images">
+
+    <label>Metadata CSV (optional)</label>
+    <input type="text" id="meta-csv"
+      value="C:\Users\tejan\OneDrive\Desktop\drive\SkinAnalytica\data\ISIC_2020\ISIC_2020_Training_GroundTruth_v2.csv"
+      placeholder="C:\path\to\metadata.csv">
+
+    <label>Labels CSV (optional)</label>
+    <input type="text" id="labels-csv" placeholder="C:\path\to\labels.csv">
+
+    <label>Session Name</label>
+    <input type="text" id="session-name" value="research_session" placeholder="my_batch">
+
+    <label>Hypothesis (optional)</label>
+    <input type="text" id="hypothesis" placeholder="Does the model perform worse on head/neck lesions?">
+
+    <div class="toggle-row">
+      <label class="toggle">
+        <input type="checkbox" id="auto-fix">
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Auto-fix corrupt/duplicate images</span>
+    </div>
+
+    <div class="toggle-row">
+      <label class="toggle">
+        <input type="checkbox" id="skip-lit" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Skip literature scout (faster)</span>
+    </div>
+
+    <button class="btn" id="run-btn" onclick="runSession()" style="width:100%;margin-top:0.5rem">
+      Run Agent Pipeline
+    </button>
+  </div>
+
+  <!-- Log output -->
+  <div class="card">
+    <h3>Pipeline Log</h3>
+    <div id="log">Ready — configure session and click Run Agent Pipeline</div>
+    <div id="flags-area" style="margin-top:1rem"></div>
+  </div>
+</div>
+
+<!-- Results summary (shown after run) -->
+<div class="full-card" id="results-card" style="display:none">
+  <h3>Session Results</h3>
+  <div id="results-content"></div>
+</div>
+
+<script>
+const API = window.parent?.SA_CONFIG?.API_BASE || 'http://localhost:8001';
+
+// Load metrics on page load
+async function loadMetrics() {
+  try {
+    const res  = await fetch(`${API}/models`);
+    const data = await res.json();
+    const m    = data.metrics || {};
+    const g    = document.getElementById('metrics-grid');
+    const fmt  = (v,pct=false) => v==null?'N/A':pct?(v*100).toFixed(1)+'%':v.toFixed?v.toFixed(4):v;
+    g.innerHTML = `
+      <div class="metric"><div class="val" style="color:var(--red2)">${fmt(m.mel_auc)}</div><div class="lbl">MelAUC</div></div>
+      <div class="metric"><div class="val" style="color:var(--red2)">${fmt(m.pauc_80)}</div><div class="lbl">pAUC</div></div>
+      <div class="metric"><div class="val" style="color:var(--amber2)">${fmt(m.sensitivity,true)}</div><div class="lbl">Sensitivity</div></div>
+      <div class="metric"><div class="val" style="color:var(--green2)">${fmt(m.specificity,true)}</div><div class="lbl">Specificity</div></div>`;
+  } catch {
+    document.getElementById('metrics-grid').innerHTML =
+      `<div style="color:var(--muted);font-size:0.78rem;grid-column:1/-1;padding:0.5rem">
+        API offline — start SA05_api.py on :8001</div>`;
+  }
+}
+loadMetrics();
+
+function log(msg, cls='') {
+  const el = document.getElementById('log');
+  const span = document.createElement('span');
+  span.className = cls;
+  span.textContent = msg + '\n';
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('flags-area').innerHTML = '';
+  document.getElementById('results-card').style.display = 'none';
+}
+
+function addFlag(msg, type='warn') {
+  const area = document.getElementById('flags-area');
+  const div  = document.createElement('div');
+  div.className = `flag flag-${type}`;
+  const icon = {ok:'✅',warn:'⚠',high:'🔴'}[type]||'⚠';
+  div.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  area.appendChild(div);
+}
+
+async function runSession() {
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  clearLog();
+
+  const folder   = document.getElementById('img-folder').value.trim();
+  const metaCsv  = document.getElementById('meta-csv').value.trim();
+  const labelsCsv= document.getElementById('labels-csv').value.trim();
+  const name     = document.getElementById('session-name').value.trim() || 'session';
+  const hypo     = document.getElementById('hypothesis').value.trim();
+
+  log(`Session: ${name}`, 'step-run');
+  log(`Folder : ${folder}`);
+  log(`Started: ${new Date().toLocaleTimeString()}\n`);
+
+  // Since the agent runner is Python (not HTTP), we simulate the steps
+  // and call the SA05 API for what we can
+  const steps = [
+    'Self-Healing Data Agent',
+    'Verification Agent',
+    'Active Learning Agent',
+    'Drift Monitor Agent',
+    'Fairness Monitor Agent',
+    'Calibration Agent',
+    hypo ? 'Hypothesis Agent' : null,
+    'Literature Scout (skipped)',
+  ].filter(Boolean);
+
+  log('Note: Agent pipeline runs via Python. Check terminal for live output.');
+  log('Showing API-accessible results below...\n');
+
+  // Fetch drift status
+  try {
+    log('[4/8] Checking drift status...','step-run');
+    const res  = await fetch(`${API}/models`);
+    const data = await res.json();
+    log(`      Model: ${data.ensemble}  Loaded: ${data.loaded}`, 'step-done');
+
+    const m = data.metrics||{};
+    if(m.fnr > 0.20) addFlag(`False negative rate ${(m.fnr*100).toFixed(1)}% — above 20% threshold`, 'warn');
+    if(m.sensitivity < 0.80) addFlag(`Sensitivity ${(m.sensitivity*100).toFixed(1)}% — below 80% target`, 'high');
+    if(m.specificity > 0.95) addFlag(`Specificity ${(m.specificity*100).toFixed(1)}% — excellent`, 'ok');
+  } catch {
+    log('      API offline — connect SA05_api.py','step-err');
+  }
+
+  log('\nTo run the full agent pipeline:', '');
+  log(`  cd agents && python agent_runner.py`, '');
+  log(`\nSession config saved. Ready for next run.`, 'step-done');
+
+  // Show results card
+  document.getElementById('results-card').style.display = 'block';
+  document.getElementById('results-content').innerHTML = `
+    <div style="color:var(--muted);font-size:0.82rem;line-height:1.8">
+      <strong style="color:var(--text)">Run in terminal for full pipeline:</strong><br><br>
+      <code style="background:var(--surface2);padding:0.75rem 1rem;border-radius:7px;
+                   display:block;font-size:0.8rem;color:var(--red3);border:1px solid var(--border2)">
+cd "C:\\...\\SkinAnalytica\\agents"
+..\\venv\\Scripts\\Activate.ps1
+python agent_runner.py</code><br>
+      Results will appear in <code>outputs/</code> folder after the run.
+    </div>`;
+
+  btn.disabled = false;
+  btn.textContent = 'Run Agent Pipeline';
+}
+</script>
+</body></html>

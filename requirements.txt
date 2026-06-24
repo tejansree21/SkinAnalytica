@@ -1,0 +1,31 @@
+# SkinAnalytica — requirements.txt
+# Compatible with Render free tier (Python 3.11)
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.7.4
+
+# ML inference
+onnxruntime==1.18.1
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+Pillow==10.4.0
+scikit-learn==1.5.1
+
+# Data
+pandas==2.2.2
+
+# Delivery
+reportlab==4.2.2
+
+# HTTP (for HF Hub model download)
+httpx==0.27.0
+requests==2.32.3
+
+# Research assistant
+anthropic==0.34.1
+
+# Utils
+python-dotenv==1.0.1
+scipy==1.13.1

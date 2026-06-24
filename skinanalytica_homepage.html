@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkinAnalytica — ISIC Dermoscopy Intelligence</title>
+<style>
+  :root {
+    --bg:       #080808;
+    --surface:  #111111;
+    --surface2: #1a1a1a;
+    --border:   #2a2a2a;
+    --border2:  #333333;
+    --red:      #dc2626;
+    --red2:     #ef4444;
+    --red3:     #fca5a5;
+    --red-glow: rgba(220,38,38,0.15);
+    --green:    #16a34a;
+    --green2:   #4ade80;
+    --amber:    #d97706;
+    --amber2:   #fbbf24;
+    --text:     #f5f5f5;
+    --muted:    #525252;
+    --subtle:   #a3a3a3;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Nav ─────────────────────────────────────────────────── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,8,8,0.92);
+    backdrop-filter: blur(16px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .logo-icon {
+    width: 34px;
+    height: 34px;
+    background: var(--red);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 0 16px var(--red-glow);
+  }
+
+  .logo span { color: var(--red2); }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: color 0.2s;
+    letter-spacing: 0.3px;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  .nav-badge {
+    background: var(--red);
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.3rem 0.85rem;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  .api-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    color: var(--subtle);
+    border: 1px solid var(--border2);
+    padding: 0.25rem 0.7rem;
+    border-radius: 20px;
+  }
+
+  .api-dot .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  .api-dot.live .dot {
+    background: var(--green2);
+    box-shadow: 0 0 6px var(--green2);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; }
+    50%      { opacity:0.4; }
+  }
+
+  /* ── Hero ────────────────────────────────────────────────── */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: 5rem 2.5rem 3.5rem;
+    text-align: center;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 50% 40% at 50% 0%, rgba(220,38,38,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 30% at 80% 30%, rgba(220,38,38,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(220,38,38,0.1);
+    border: 1px solid rgba(220,38,38,0.3);
+    color: var(--red3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.5px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero h1 span {
+    color: var(--red2);
+  }
+
+  .hero p {
+    font-size: 1.05rem;
+    color: var(--subtle);
+    max-width: 560px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.75;
+  }
+
+  /* ── Stats ───────────────────────────────────────────────── */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+  }
+
+  .stat { text-align: center; }
+
+  .stat-value {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--red2);
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 0.15rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Model pills ─────────────────────────────────────────── */
+  .model-pills {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+  }
+
+  .model-pill {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--subtle);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .pill-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--red2);
+  }
+
+  /* ── Upload zone ─────────────────────────────────────────── */
+  .upload-section {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .upload-zone {
+    background: var(--surface);
+    border: 2px dashed var(--border2);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--red);
+    background: rgba(220,38,38,0.04);
+  }
+
+  .upload-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(220,38,38,0.07) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .upload-zone:hover .upload-glow { opacity: 1; }
+
+  .upload-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1.25rem;
+    background: rgba(220,38,38,0.12);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    border: 1px solid rgba(220,38,38,0.2);
+  }
+
+  .upload-zone h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    color: var(--text);
+  }
+
+  .upload-zone p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .upload-btn {
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 0.7rem 2rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    letter-spacing: 0.3px;
+  }
+
+  .upload-btn:hover {
+    background: var(--red2);
+    transform: translateY(-1px);
+  }
+
+  .upload-formats {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .fmt-tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    letter-spacing: 0.4px;
+  }
+
+  #file-input { display: none; }
+
+  /* ── Samples ─────────────────────────────────────────────── */
+  .samples-section {
+    max-width: 820px;
+    margin: 2rem auto 0;
+    padding: 0 1.5rem;
+  }
+
+  .samples-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .samples-header h4 {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .samples-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .samples-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.65rem;
+  }
+
+  .sample-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .sample-card:hover {
+    border-color: var(--red);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220,38,38,0.15);
+  }
+
+  .sample-card.active {
+    border-color: var(--red);
+    box-shadow: 0 0 0 2px rgba(220,38,38,0.3);
+  }
+
+  .sample-img {
+    width: 100%;
+    aspect-ratio: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pattern-mel   { background: radial-gradient(circle at 40% 40%, #6b2020 0%, #3d1010 40%, #1a0808 100%); }
+  .pattern-nv    { background: radial-gradient(circle at 50% 50%, #5c3a1e 0%, #3d2010 50%, #1a0c04 100%); }
+  .pattern-bcc   { background: radial-gradient(circle at 45% 35%, #5c2020 0%, #3d1010 40%, #200808 100%); }
+  .pattern-akiec { background: radial-gradient(circle at 50% 50%, #5c4020 0%, #3d2c10 50%, #1a1004 100%); }
+  .pattern-bkl   { background: radial-gradient(circle at 55% 45%, #3d3020 0%, #28200e 50%, #141008 100%); }
+  .pattern-vasc  { background: radial-gradient(circle at 50% 50%, #8b1a1a 0%, #5c0e0e 40%, #2d0606 100%); }
+
+  .sample-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .sample-card:hover .sample-overlay { background: rgba(220,38,38,0.2); }
+
+  .sample-overlay-text {
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.2s;
+    text-align: center;
+  }
+
+  .sample-card:hover .sample-overlay-text { opacity: 1; }
+
+  .sample-info { padding: 0.5rem 0.55rem 0.6rem; }
+
+  .sample-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sample-sub {
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-top: 0.1rem;
+  }
+
+  .sample-badge {
+    display: inline-block;
+    font-size: 0.56rem;
+    font-weight: 700;
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+    margin-top: 0.25rem;
+    letter-spacing: 0.3px;
+  }
+
+  .badge-malignant { background: rgba(220,38,38,0.15); color: #fca5a5; }
+  .badge-benign    { background: rgba(22,163,74,0.15);  color: #86efac; }
+  .badge-monitor   { background: rgba(217,119,6,0.15);  color: #fcd34d; }
+
+  /* ── Result panel ─────────────────────────────────────────── */
+  .result-panel {
+    max-width: 820px;
+    margin: 1.5rem auto 0;
+    padding: 0 1.5rem;
+    display: none;
+  }
+
+  .result-panel.visible { display: block; }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .result-verdict {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .verdict-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  .verdict-cancer { background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.3); }
+  .verdict-review { background: rgba(217,119,6,0.15); border: 1px solid rgba(217,119,6,0.3); }
+  .verdict-normal { background: rgba(22,163,74,0.15);  border: 1px solid rgba(22,163,74,0.3); }
+
+  .verdict-text h3 { font-size:1.05rem; font-weight:700; margin-bottom:0.15rem; }
+  .verdict-text p  { font-size:0.8rem; color:var(--muted); }
+
+  .result-metric {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+  }
+
+  .result-metric-label {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 0.4rem;
+  }
+
+  .result-metric-value { font-size:1.35rem; font-weight:800; }
+
+  .metric-red   { color: var(--red2); }
+  .metric-amber { color: var(--amber2); }
+  .metric-green { color: var(--green2); }
+
+  .prob-bars { grid-column: 1 / -1; }
+
+  .prob-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .prob-bar-label { font-size:0.72rem; color:var(--subtle); width:110px; flex-shrink:0; }
+
+  .prob-bar-track {
+    flex: 1;
+    height: 5px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .prob-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.25,1,0.5,1);
+  }
+
+  .prob-bar-pct { font-size:0.7rem; color:var(--muted); width:36px; text-align:right; }
+
+  /* ── API status banner ───────────────────────────────────── */
+  .api-banner {
+    max-width: 820px;
+    margin: 1rem auto 0;
+    padding: 0 1.5rem;
+  }
+
+  .api-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .api-status-bar .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .api-status-bar.live   { border-color: rgba(22,163,74,0.3); }
+  .api-status-bar.live .status-dot { background: var(--green2); box-shadow:0 0 6px var(--green2); animation: pulse 2s infinite; }
+  .api-status-bar.error  { border-color: rgba(220,38,38,0.3); }
+  .api-status-bar.error .status-dot { background: var(--red2); }
+
+  /* ── Features ────────────────────────────────────────────── */
+  .features {
+    max-width: 1040px;
+    margin: 4rem auto;
+    padding: 0 2rem;
+  }
+
+  .features-title {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.5px;
+  }
+
+  .features-title span { color: var(--red2); }
+
+  .features-sub {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 1rem;
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .feature-card:hover {
+    border-color: var(--border2);
+    transform: translateY(-2px);
+  }
+
+  .feature-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    margin-bottom: 0.9rem;
+    background: rgba(220,38,38,0.1);
+    border: 1px solid rgba(220,38,38,0.15);
+  }
+
+  .feature-card h4 { font-size:0.9rem; font-weight:700; margin-bottom:0.35rem; }
+  .feature-card p  { font-size:0.8rem; color:var(--muted); line-height:1.6; }
+
+  /* ── Loading overlay ─────────────────────────────────────── */
+  .analyzing-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8,8,8,0.88);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    backdrop-filter: blur(6px);
+  }
+
+  .analyzing-overlay.visible { display: flex; }
+
+  .analyzing-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 2.5rem 3rem;
+    text-align: center;
+    min-width: 300px;
+  }
+
+  .spinner {
+    width: 44px;
+    height: 44px;
+    border: 2.5px solid var(--border2);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    margin: 0 auto 1.25rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .analyzing-box h3 { font-size:1rem; font-weight:700; margin-bottom:0.35rem; }
+  .analyzing-box p  { font-size:0.8rem; color:var(--muted); }
+
+  .analyzing-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 1.25rem;
+    text-align: left;
+  }
+
+  .step { display:flex; align-items:center; gap:0.55rem; font-size:0.76rem; color:var(--muted); }
+  .step.active { color: var(--red2); }
+  .step.done   { color: var(--green2); }
+
+  .step-dot { width:7px; height:7px; border-radius:50%; background:var(--muted); flex-shrink:0; }
+  .step.active .step-dot { background:var(--red2); animation:pulse 1s infinite; }
+  .step.done   .step-dot { background:var(--green2); }
+
+  /* ── Footer ──────────────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4rem;
+  }
+
+  footer p { font-size:0.75rem; color:var(--muted); }
+
+  .footer-links { display:flex; gap:1.5rem; }
+  .footer-links a { font-size:0.75rem; color:var(--muted); text-decoration:none; transition:color 0.2s; }
+  .footer-links a:hover { color:var(--subtle); }
+
+  /* ── Error toast ─────────────────────────────────────────── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--surface);
+    border: 1px solid rgba(220,38,38,0.4);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    font-size: 0.82rem;
+    max-width: 320px;
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-title { font-weight: 700; color: var(--red2); margin-bottom: 0.25rem; }
+
+  @media (max-width:640px) {
+    .samples-grid { grid-template-columns: repeat(3,1fr); }
+    .features-grid { grid-template-columns: 1fr; }
+    .result-card { grid-template-columns: 1fr; }
+    .stats-bar { gap:1.5rem; }
+    nav { padding: 0.75rem 1rem; }
+    .nav-links { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="logo">
+    <div class="logo-icon">🔬</div>
+    Skin<span>Analytica</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#">Analyze</a></li>
+    <li><a href="#">Research</a></li>
+    <li><a href="http://localhost:8001/docs" target="_blank">API</a></li>
+    <li><a href="http://localhost:8002/docs" target="_blank">Assistant</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:0.75rem">
+    <div class="api-dot" id="api-pill">
+      <span class="dot"></span>
+      <span id="api-pill-text">checking...</span>
+    </div>
+    <div class="nav-badge">ISIC QA Platform</div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-bg"></div>
+
+  <div class="hero-tag">
+    ✦ Three-Model Ensemble &nbsp;·&nbsp; 0.9887 AUC &nbsp;·&nbsp; ISIC-Grade
+  </div>
+
+  <h1>
+    Dermoscopy Intelligence<br>
+    <span>Built for ISIC Researchers</span>
+  </h1>
+
+  <p>
+    Upload a dermoscopy image for AI-assisted classification across 7 skin lesion categories.
+    Powered by EfficientNetV2, ViT-Large, and ConvNeXt ensemble.
+  </p>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-value">0.9887</div><div class="stat-label">Ensemble AUC</div></div>
+    <div class="stat"><div class="stat-value">97.6%</div><div class="stat-label">Specificity</div></div>
+    <div class="stat"><div class="stat-value">68.5K</div><div class="stat-label">Training Images</div></div>
+    <div class="stat"><div class="stat-value">7</div><div class="stat-label">Lesion Classes</div></div>
+  </div>
+
+  <div class="model-pills">
+    <div class="model-pill"><span class="pill-dot"></span>EfficientNetV2-S · 0.9715</div>
+    <div class="model-pill"><span class="pill-dot"></span>ViT-Large · 0.9887</div>
+    <div class="model-pill"><span class="pill-dot"></span>ConvNeXt-Large · 0.9883</div>
+  </div>
+</section>
+
+<!-- API status -->
+<div class="api-banner">
+  <div class="api-status-bar" id="api-status-bar">
+    <span class="status-dot"></span>
+    <span id="api-status-text">Connecting to SkinAnalytica API on localhost:8001...</span>
+  </div>
+</div>
+
+<!-- Upload zone -->
+<div class="upload-section" style="margin-top:1.5rem">
+  <div class="upload-zone" id="dropzone">
+    <div class="upload-glow"></div>
+    <div class="upload-icon">🖼️</div>
+    <h3>Drop dermoscopy image here</h3>
+    <p>Or select from samples below &nbsp;·&nbsp; JPEG · PNG · TIFF · BMP</p>
+    <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+      Choose Image
+    </button>
+    <div class="upload-formats">
+      <span class="fmt-tag">JPEG</span>
+      <span class="fmt-tag">PNG</span>
+      <span class="fmt-tag">TIFF</span>
+      <span class="fmt-tag">BMP</span>
+      <span class="fmt-tag">≤ 20MB</span>
+    </div>
+    <input type="file" id="file-input" accept="image/*" onchange="handleFile(this)">
+  </div>
+</div>
+
+<!-- Samples -->
+<div class="samples-section">
+  <div class="samples-header">
+    <h4>Try a sample</h4>
+    <div class="samples-line"></div>
+  </div>
+  <div class="samples-grid">
+
+    <div class="sample-card" onclick="selectSample(this,'mel','Melanoma','CANCER_FLAGGED')">
+      <div class="sample-img pattern-mel">
+        <div class="sample-overlay"><span class="sample-overlay-text">Analyze</span></div>
+      </div>
+      <div class="sample-info">
+        <div class="sample-label">Melanoma</div>
+        <div class="sample-sub">ISIC_0024306</div>
+        <span class="sample-badge badge-malignant">MALIGNANT</span>
+      </div>
+    </div>
+
+    <div class="sample-card" onclick="selectSample(this,'nv','Melanocytic Nevus','NORMAL')">
+      <div class="sample-img pattern-nv">
+        <div class="sample-overlay"><span class="sample-overlay-text">Analyze</span></div>
+      </div>
+      <div class="sample-info">
+        <div class="sample-label">Nevus</div>
+        <div class="sample-sub">ISIC_0025030</div>
+        <span class="sample-badge badge-benign">BENIGN</span>
+      </div>
+    </div>
+
+    <div class="sample-card" onclick="selectSample(this,'bcc','Basal Cell Carcinoma','CANCER_FLAGGED')">
+      <div class="sample-img pattern-bcc">
+        <div class="sample-overlay"><span class="sample-overlay-text">Analyze</span></div>
+      </div>
+      <div class="sample-info">
+        <div class="sample-label">BCC</div>
+        <div class="sample-sub">ISIC_0025661</div>
+        <span class="sample-badge badge-malignant">MALIGNANT</span>
+      </div>
+    </div>
+
+    <div class="sample-card" onclick="selectSample(this,'akiec','Actinic Keratosis','CANCER_FLAGGED')">
+      <div class="sample-img pattern-akiec">
+        <div class="sample-overlay"><span class="sample-overlay-text">Analyze</span></div>
+      </div>
+      <div class="sample-info">
+        <div class="sample-label">AK / IEC</div>
+        <div class="sample-sub">ISIC_0026046</div>
+        <span class="sample-badge badge-monitor">MONITOR</span>
+      </div>
+    </div>
+
+    <div class="sample-card" onclick="selectSample(this,'bkl','Benign Keratosis','NORMAL')">
+      <div class="sample-img pattern-bkl">
+        <div class="sample-overlay"><span class="sample-overlay-text">Analyze</span></div>
+      </div>
+      <div class="sample-info">
+        <div class="sample-label">Ben. Keratosis</div>
+        <div class="sample-sub">ISIC_0026798</div>
+        <span class="sample-badge badge-benign">BENIGN</span>
+      </div>
+    </div>
+
+    <div class="sample-card" onclick="selectSample(this,'vasc','Vascular Lesion','REVIEW_REQUIRED')">
+      <div class="sample-img pattern-vasc">
+        <div class="sample-overlay"><span class="sample-overlay-text">Analyze</span></div>
+      </div>
+      <div class="sample-info">
+        <div class="sample-label">Vascular</div>
+        <div class="sample-sub">ISIC_0027419</div>
+        <span class="sample-badge badge-monitor">REVIEW</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Result panel -->
+<div class="result-panel" id="result-panel">
+  <div class="result-card" id="result-card"></div>
+</div>
+
+<!-- Features -->
+<div class="features">
+  <h2 class="features-title">Built for <span>Clinical-Grade</span> Research</h2>
+  <p class="features-sub">Every component designed to meet ISIC annotation quality assurance standards</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🧠</div>
+      <h4>3-Model Ensemble</h4>
+      <p>EfficientNetV2, ViT-Large, and ConvNeXt-Large combined via calibrated weighted softmax.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔬</div>
+      <h4>Hair Removal</h4>
+      <p>Dermoscopy-specific black-hat morphological preprocessing removes hair artifacts.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h4>Annotation QA</h4>
+      <p>Confidence gap analysis flags ambiguous cases and annotation conflicts (1–10 scoring).</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🗺️</div>
+      <h4>Grad-CAM++ Heatmaps</h4>
+      <p>Visual explanations showing which lesion regions drive each classification decision.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h4>Bulk Research Sessions</h4>
+      <p>Analyze entire ISIC folders with demographic breakdowns and bias reports.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏥</div>
+      <h4>NCCN-Aligned Reports</h4>
+      <p>Auto-generated clinical reports with ICD-10 codes and FHIR export.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <p>© 2026 SkinAnalytica · NCI Ireland · For research use only — not a medical device</p>
+  <div class="footer-links">
+    <a href="http://localhost:8001/docs" target="_blank">API Docs</a>
+    <a href="http://localhost:8002/docs" target="_blank">Assistant</a>
+    <a href="http://localhost:8003/docs" target="_blank">Delivery</a>
+    <a href="#">ISIC Archive</a>
+  </div>
+</footer>
+
+<!-- Analyzing overlay -->
+<div class="analyzing-overlay" id="analyzing-overlay">
+  <div class="analyzing-box">
+    <div class="spinner"></div>
+    <h3>Analyzing lesion...</h3>
+    <p>Three-model ensemble inference</p>
+    <div class="analyzing-steps">
+      <div class="step" id="step1"><div class="step-dot"></div>Hair removal preprocessing</div>
+      <div class="step" id="step2"><div class="step-dot"></div>EfficientNetV2-S inference</div>
+      <div class="step" id="step3"><div class="step-dot"></div>ViT-Large inference</div>
+      <div class="step" id="step4"><div class="step-dot"></div>ConvNeXt-Large inference</div>
+      <div class="step" id="step5"><div class="step-dot"></div>Ensemble calibration</div>
+    </div>
+  </div>
+</div>
+
+<!-- Error toast -->
+<div class="toast" id="toast">
+  <div class="toast-title" id="toast-title">Error</div>
+  <div id="toast-body"></div>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:8001';
+let apiLive    = false;
+let uploadedFile = null;
+
+// ── API health check ──────────────────────────────────────────────
+async function checkApi() {
+  const bar  = document.getElementById('api-status-bar');
+  const txt  = document.getElementById('api-status-text');
+  const pill = document.getElementById('api-pill');
+  const pt   = document.getElementById('api-pill-text');
+  try {
+    const res  = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      apiLive = true;
+      bar.className  = 'api-status-bar live';
+      txt.textContent= `API live · SkinAnalytica v${data.version} · Model ${data.model}`;
+      pill.className = 'api-dot live';
+      pt.textContent = 'API live';
+    }
+  } catch {
+    bar.className  = 'api-status-bar error';
+    txt.textContent= 'API offline — start SA05_api.py on :8001 to enable real analysis. Demo mode active.';
+    pill.className = 'api-dot';
+    pt.textContent = 'Demo mode';
+  }
+}
+checkApi();
+setInterval(checkApi, 30000);
+
+// ── Toast ─────────────────────────────────────────────────────────
+function showToast(title, body, duration=4000) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-title').textContent = title;
+  document.getElementById('toast-body').textContent  = body;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Drag & drop ───────────────────────────────────────────────────
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    uploadedFile = file;
+    runRealAnalysis(file);
+  }
+});
+
+function handleFile(input) {
+  if (input.files[0]) {
+    uploadedFile = input.files[0];
+    runRealAnalysis(uploadedFile);
+  }
+}
+
+// ── Sample select ─────────────────────────────────────────────────
+function selectSample(card, cls, fullName, verdict) {
+  document.querySelectorAll('.sample-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  // Samples use demo mode (no real image to send)
+  runDemoAnalysis(cls, fullName, verdict);
+}
+
+// ── Real API analysis ─────────────────────────────────────────────
+async function runRealAnalysis(file) {
+  showAnalyzing();
+  if (!apiLive) {
+    await fakeStepper();
+    hideAnalyzing();
+    showDemoResult('mel', 'Melanoma', 'CANCER_FLAGGED');
+    showToast('Demo mode', 'API offline — showing mock result. Start SA05_api.py for real analysis.');
+    return;
+  }
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    stepTo(2);
+    const res  = await fetch(`${API_BASE}/analyze`, { method:'POST', body:fd });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    stepTo(5);
+    await delay(300);
+    const data = await res.json();
+    hideAnalyzing();
+    showApiResult(data);
+  } catch(e) {
+    hideAnalyzing();
+    showToast('Analysis failed', e.message);
+    showDemoResult('mel','Melanoma','CANCER_FLAGGED');
+  }
+}
+
+// ── Demo analysis (samples + offline fallback) ────────────────────
+async function runDemoAnalysis(cls, fullName, verdict) {
+  showAnalyzing();
+  await fakeStepper();
+  hideAnalyzing();
+  showDemoResult(cls, fullName, verdict);
+}
+
+async function fakeStepper() {
+  const steps = ['step1','step2','step3','step4','step5'];
+  for(let i=0; i<steps.length; i++) {
+    if(i>0) document.getElementById(steps[i-1]).className='step done';
+    document.getElementById(steps[i]).className='step active';
+    await delay(380);
+  }
+  document.getElementById(steps[steps.length-1]).className='step done';
+  await delay(250);
+}
+
+function stepTo(n) {
+  const steps = ['step1','step2','step3','step4','step5'];
+  steps.forEach((s,i) => {
+    const el = document.getElementById(s);
+    if(i < n-1)      el.className = 'step done';
+    else if(i===n-1) el.className = 'step active';
+    else             el.className = 'step';
+  });
+}
+
+let _analyzeTimer = null;
+function showAnalyzing() {
+  document.getElementById('analyzing-overlay').classList.add('visible');
+  ['step1','step2','step3','step4','step5'].forEach(s =>
+    document.getElementById(s).className='step');
+  document.getElementById('step1').className='step done';
+  document.getElementById('step2').className='step active';
+}
+function hideAnalyzing() {
+  document.getElementById('analyzing-overlay').classList.remove('visible');
+}
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Show real API result ──────────────────────────────────────────
+function showApiResult(data) {
+  const verdictMap = {
+    'CANCER_FLAGGED' : { icon:'⚠️', cls:'verdict-cancer', label:'Cancer Flagged',   color:'var(--red2)' },
+    'REVIEW_REQUIRED': { icon:'🔍', cls:'verdict-review',  label:'Review Required', color:'var(--amber2)' },
+    'NORMAL'         : { icon:'✅', cls:'verdict-normal',  label:'Normal / Benign', color:'var(--green2)' },
+  };
+  const v       = verdictMap[data.verdict] || verdictMap['REVIEW_REQUIRED'];
+  const classes = ['mel','nv','bcc','akiec','bkl','df','vasc'];
+  const colors  = { mel:'#dc2626',nv:'#16a34a',bcc:'#d97706',
+                    akiec:'#ea580c',bkl:'#0891b2',df:'#7c3aed',vasc:'#db2777' };
+  const fullNames = { mel:'Melanoma',nv:'Melanocytic Nevus',bcc:'Basal Cell Carcinoma',
+                      akiec:'Actinic Keratosis',bkl:'Benign Keratosis',
+                      df:'Dermatofibroma',vasc:'Vascular Lesion' };
+  const probs   = data.probs || {};
+  const confColor = data.confidence >= 0.9 ? 'metric-green' : data.confidence >= 0.7 ? 'metric-amber' : 'metric-red';
+
+  let barsHtml = classes.map(c => {
+    const pct = ((probs[c]||0)*100).toFixed(1);
+    return `<div class="prob-bar-row">
+      <div class="prob-bar-label">${fullNames[c]||c}</div>
+      <div class="prob-bar-track">
+        <div class="prob-bar-fill" style="width:${pct}%;background:${colors[c]||'#dc2626'}"></div>
+      </div>
+      <div class="prob-bar-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('result-card').innerHTML = `
+    <div class="result-verdict">
+      <div class="verdict-icon ${v.cls}">${v.icon}</div>
+      <div class="verdict-text">
+        <h3 style="color:${v.color}">${v.label}</h3>
+        <p>${data.pred_class_full||''} · Scan ${data.scan_id||''} · ICD-10: ${data.icd10||''} · ${data.latency_ms||0}ms</p>
+      </div>
+    </div>
+    <div class="result-metric">
+      <div class="result-metric-label">Confidence</div>
+      <div class="result-metric-value ${confColor}">${((data.confidence||0)*100).toFixed(1)}%</div>
+    </div>
+    <div class="result-metric">
+      <div class="result-metric-label">Mel Score</div>
+      <div class="result-metric-value ${(data.mel_score||0)>0.45?'metric-red':'metric-green'}">${((data.mel_score||0)*100).toFixed(1)}%</div>
+    </div>
+    <div class="result-metric">
+      <div class="result-metric-label">Priority</div>
+      <div class="result-metric-value ${data.priority<=2?'metric-red':data.priority===3?'metric-amber':'metric-green'}">P${data.priority||4}</div>
+    </div>
+    <div class="prob-bars">${barsHtml}</div>`;
+
+  const panel = document.getElementById('result-panel');
+  panel.classList.add('visible');
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ── Demo result (offline/samples) ────────────────────────────────
+const MOCK_PROBS = {
+  mel  :[0.72,0.08,0.06,0.05,0.04,0.03,0.02],
+  nv   :[0.04,0.82,0.04,0.03,0.04,0.02,0.01],
+  bcc  :[0.05,0.06,0.74,0.06,0.05,0.02,0.02],
+  akiec:[0.06,0.05,0.07,0.68,0.08,0.04,0.02],
+  bkl  :[0.03,0.06,0.04,0.05,0.76,0.04,0.02],
+  vasc :[0.04,0.06,0.05,0.06,0.07,0.05,0.67],
+};
+const CLASS_FULL = {
+  mel:'Melanoma',nv:'Melanocytic Nevus',bcc:'Basal Cell Carcinoma',
+  akiec:'Actinic Keratosis',bkl:'Benign Keratosis',df:'Dermatofibroma',vasc:'Vascular Lesion'
+};
+const CLASSES = ['mel','nv','bcc','akiec','bkl','df','vasc'];
+const COLORS  = {mel:'#dc2626',nv:'#16a34a',bcc:'#d97706',
+                 akiec:'#ea580c',bkl:'#0891b2',df:'#7c3aed',vasc:'#db2777'};
+
+function showDemoResult(cls, fullName, verdict) {
+  const verdictMap = {
+    'CANCER_FLAGGED' : { icon:'⚠️', cls:'verdict-cancer', label:'Cancer Flagged',   color:'var(--red2)' },
+    'REVIEW_REQUIRED': { icon:'🔍', cls:'verdict-review',  label:'Review Required', color:'var(--amber2)' },
+    'NORMAL'         : { icon:'✅', cls:'verdict-normal',  label:'Normal / Benign', color:'var(--green2)' },
+  };
+  const v     = verdictMap[verdict] || verdictMap['NORMAL'];
+  const probs = MOCK_PROBS[cls] || MOCK_PROBS.mel;
+  const conf  = probs[CLASSES.indexOf(cls)] || 0.72;
+
+  let barsHtml = CLASSES.map((c,i) => {
+    const pct = (probs[i]*100).toFixed(1);
+    return `<div class="prob-bar-row">
+      <div class="prob-bar-label">${CLASS_FULL[c]}</div>
+      <div class="prob-bar-track">
+        <div class="prob-bar-fill" style="width:${pct}%;background:${COLORS[c]}"></div>
+      </div>
+      <div class="prob-bar-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  const confColor = conf>=0.9?'metric-green':conf>=0.7?'metric-amber':'metric-red';
+  const melScore  = probs[0];
+
+  document.getElementById('result-card').innerHTML = `
+    <div class="result-verdict">
+      <div class="verdict-icon ${v.cls}">${v.icon}</div>
+      <div class="verdict-text">
+        <h3 style="color:${v.color}">${v.label}</h3>
+        <p>${fullName} · Demo mode · Upload a real image for live API analysis</p>
+      </div>
+    </div>
+    <div class="result-metric">
+      <div class="result-metric-label">Confidence</div>
+      <div class="result-metric-value ${confColor}">${(conf*100).toFixed(1)}%</div>
+    </div>
+    <div class="result-metric">
+      <div class="result-metric-label">Mel Score</div>
+      <div class="result-metric-value ${melScore>0.45?'metric-red':'metric-green'}">${(melScore*100).toFixed(1)}%</div>
+    </div>
+    <div class="result-metric">
+      <div class="result-metric-label">Priority</div>
+      <div class="result-metric-value ${verdict==='CANCER_FLAGGED'?'metric-red':verdict==='REVIEW_REQUIRED'?'metric-amber':'metric-green'}">
+        ${verdict==='CANCER_FLAGGED'?'P1':verdict==='REVIEW_REQUIRED'?'P3':'P4'}
+      </div>
+    </div>
+    <div class="prob-bars">${barsHtml}</div>`;
+
+  const panel = document.getElementById('result-panel');
+  panel.classList.add('visible');
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+</script>
+</body>
+</html>

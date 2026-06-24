@@ -1,0 +1,19 @@
+﻿@"
+# Large files — never commit
+models/
+data/
+notebooks/
+outputs/
+venv/
+__pycache__/
+*.pyc
+*.onnx
+*.pth
+*.pt
+*.h5
+*.npy
+*.npz
+.env
+*.egg-info/
+.DS_Store
+"@ | Out-File -Encoding utf8 .gitignore
