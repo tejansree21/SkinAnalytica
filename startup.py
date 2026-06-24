@@ -15,7 +15,7 @@ from pathlib import Path
 # ── Config ────────────────────────────────────────────────────────
 HF_REPO    = os.environ.get("HF_MODEL_REPO", "tejansree/skinanalytica-models")
 HF_BASE    = f"https://huggingface.co/{HF_REPO}/resolve/main"
-MODEL_DIR  = Path(os.environ.get("MODEL_DIR", "/app/models/production/onnx"))
+MODEL_DIR  = Path(os.environ.get("MODEL_DIR", "/opt/render/project/src/models/production/onnx"))
 MODE       = os.environ.get("SKINANALYTICA_MODEL_MODE", "efficientnet")
 
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
