@@ -173,7 +173,7 @@
 
   <div class="base-url">
     <span class="base-label">Base URL</span>
-    <span class="base-value" id="base-url-text">http://localhost:8001</span>
+    <span class="base-value" id="base-url-text">https://skinanalytica-api.onrender.com</span>
     <button class="copy-btn" onclick="copyText('http://localhost:8001')">Copy</button>
     <div id="api-live" style="font-size:0.7rem;color:var(--muted)">checking...</div>
   </div>
@@ -238,7 +238,7 @@
 }</pre>
           </div>
         </div>
-        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/health',null,'try-health')">Try it →</button>
+        <button class="try-btn" onclick="tryEndpoint('GET',(window.parent?.SA_CONFIG?.API_BASE || 'https://skinanalytica-api.onrender.com') + '/health',null,'try-health')">Try it →</button>
         <div class="try-result" id="try-health"></div>
       </div>
     </div>
@@ -270,7 +270,7 @@
   <span class="key">"loaded"</span>: <span class="kw">true</span>
 }</pre>
         </div>
-        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/models',null,'try-models')">Try it →</button>
+        <button class="try-btn" onclick="tryEndpoint('GET',(window.parent?.SA_CONFIG?.API_BASE||'https://skinanalytica-api.onrender.com')+'/models',null,'try-models')">Try it →</button>
         <div class="try-result" id="try-models"></div>
       </div>
     </div>
@@ -460,7 +460,7 @@ print(f<span class="str">"Flagged: {data['flagged_count']}/{data['total']}"</spa
       </div>
       <div class="ep-body">
         <div class="param-row"><span class="param-name">patient_id</span><span class="param-type">string</span><span class="param-req">required</span><span class="param-desc">Patient identifier used during /analyze</span></div>
-        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/patient/demo123/history',null,'try-patient')">Try it →</button>
+        <button class="try-btn" onclick="tryEndpoint('GET',(window.parent?.SA_CONFIG?.API_BASE||'https://skinanalytica-api.onrender.com')+'/patient/demo123/history',null,'try-patient')">Try it →</button>
         <div class="try-result" id="try-patient"></div>
       </div>
     </div>
@@ -477,7 +477,7 @@ print(f<span class="str">"Flagged: {data['flagged_count']}/{data['total']}"</spa
         <span class="ep-desc">List completed QA research sessions</span>
       </div>
       <div class="ep-body">
-        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/research/sessions',null,'try-sessions')">Try it →</button>
+        <button class="try-btn" onclick="tryEndpoint('GET',(window.parent?.SA_CONFIG?.API_BASE||'https://skinanalytica-api.onrender.com')+'/research/sessions',null,'try-sessions')">Try it →</button>
         <div class="try-result" id="try-sessions"></div>
       </div>
     </div>
@@ -490,7 +490,7 @@ print(f<span class="str">"Flagged: {data['flagged_count']}/{data['total']}"</spa
       </div>
       <div class="ep-body">
         <div class="param-row"><span class="param-name">limit</span><span class="param-type">integer</span><span class="param-req">optional</span><span class="param-desc">Max entries to return (default 50)</span></div>
-        <button class="try-btn" onclick="tryEndpoint('GET','http://localhost:8001/audit/log?limit=10',null,'try-audit')">Try it →</button>
+        <button class="try-btn" onclick="tryEndpoint('GET',(window.parent?.SA_CONFIG?.API_BASE||'https://skinanalytica-api.onrender.com')+'/audit/log?limit=10',null,'try-audit')">Try it →</button>
         <div class="try-result" id="try-audit"></div>
       </div>
     </div>
@@ -599,7 +599,7 @@ links.forEach(a => {
 async function checkApi() {
   const el = document.getElementById('api-live');
   try {
-    const res = await fetch('http://localhost:8001/health', {signal:AbortSignal.timeout(3000)});
+    const res = await fetch((window.parent?.SA_CONFIG?.API_BASE || 'https://skinanalytica-api.onrender.com') + '/health', {signal:AbortSignal.timeout(3000)});
     const d   = await res.json();
     el.innerHTML = d.status==='ok'
       ? `<span style="color:var(--green2)">● live</span>`
