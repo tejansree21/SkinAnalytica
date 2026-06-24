@@ -4,7 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SkinAnalytica</title>
-<script src="env_config.js"></script>
+<script>
+// SkinAnalytica env config — inlined to avoid 404
+(function() {
+  const hostname = window.location.hostname;
+  const isLocal  = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+  let API_BASE, ASSISTANT_BASE, DELIVERY_BASE;
+  if (isLocal) {
+    API_BASE       = 'http://localhost:8001';
+    ASSISTANT_BASE = 'http://localhost:8002';
+    DELIVERY_BASE  = 'http://localhost:8003';
+  } else {
+    API_BASE       = 'https://skinanalytica-api.onrender.com';
+    ASSISTANT_BASE = 'https://skinanalytica-assistant.onrender.com';
+    DELIVERY_BASE  = 'https://skinanalytica-delivery.onrender.com';
+  }
+  window.SA_CONFIG = { API_BASE, ASSISTANT_BASE, DELIVERY_BASE,
+    ENV: isLocal ? 'local' : 'production' };
+  console.log('[SkinAnalytica] Config:', window.SA_CONFIG);
+})();
+</script>
 <style>
   :root {
     --bg:      #080808;

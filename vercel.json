@@ -1,25 +1,14 @@
 {
   "version": 2,
   "name": "skinanalytica",
-  "builds": [
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "pages/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "skinanalytica_docs.html",
-      "use": "@vercel/static"
-    }
-  ],
   "routes": [
-    { "src": "/",           "dest": "/index.html" },
-    { "src": "/docs",       "dest": "/skinanalytica_docs.html" },
-    { "src": "/pages/(.*)", "dest": "/pages/$1" },
-    { "src": "/(.*)",       "dest": "/$1" }
+    { "src": "/",                "dest": "/index.html" },
+    { "src": "/docs",            "dest": "/skinanalytica_docs.html" },
+    { "src": "/env_config.js",   "dest": "/env_config.js" },
+    { "src": "/pages/(.*)",      "dest": "/pages/$1" },
+    { "src": "/(.*\\.html)",     "dest": "/$1" },
+    { "src": "/(.*\\.js)",       "dest": "/$1" },
+    { "src": "/(.*)",            "dest": "/index.html" }
   ],
   "headers": [
     {
@@ -27,7 +16,7 @@
       "headers": [
         { "key": "X-Frame-Options",        "value": "SAMEORIGIN" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" }
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     }
   ]
