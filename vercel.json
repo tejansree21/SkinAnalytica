@@ -1,23 +1,16 @@
 {
   "version": 2,
   "name": "skinanalytica",
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "framework": null,
   "routes": [
-    { "src": "/",                "dest": "/index.html" },
-    { "src": "/docs",            "dest": "/skinanalytica_docs.html" },
-    { "src": "/env_config.js",   "dest": "/env_config.js" },
-    { "src": "/pages/(.*)",      "dest": "/pages/$1" },
-    { "src": "/(.*\\.html)",     "dest": "/$1" },
-    { "src": "/(.*\\.js)",       "dest": "/$1" },
-    { "src": "/(.*)",            "dest": "/index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Frame-Options",        "value": "SAMEORIGIN" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
-      ]
-    }
+    { "src": "/",              "dest": "/index.html" },
+    { "src": "/docs",          "dest": "/skinanalytica_docs.html" },
+    { "src": "/pages/(.*)",    "dest": "/pages/$1" },
+    { "src": "/(.*\\.html)",   "dest": "/$1" },
+    { "src": "/(.*\\.js)",     "dest": "/$1" },
+    { "src": "/(.*\\.css)",    "dest": "/$1" },
+    { "src": "/(.*)",          "dest": "/index.html" }
   ]
 }
