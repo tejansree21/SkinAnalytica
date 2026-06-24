@@ -3,7 +3,6 @@ services:
   - type: web
     name: skinanalytica-api
     runtime: python
-    pythonVersion: "3.11.0"
     buildCommand: |
       pip install requests httpx
       pip install -r requirements.txt
@@ -28,7 +27,6 @@ services:
   - type: web
     name: skinanalytica-assistant
     runtime: python
-    pythonVersion: "3.11.0"
     buildCommand: pip install -r requirements.txt
     startCommand: cd assistant && uvicorn assistant_api:app --host 0.0.0.0 --port $PORT
     plan: free
@@ -41,7 +39,6 @@ services:
   - type: web
     name: skinanalytica-delivery
     runtime: python
-    pythonVersion: "3.11.0"
     buildCommand: pip install -r requirements.txt
     startCommand: cd delivery && uvicorn delivery_api:app --host 0.0.0.0 --port $PORT
     plan: free
