@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional
 from question_library import QUESTION_LIBRARY, get_question_by_id
 from data_layer import query_data, DATA_ROUTES
+from sandboxed_calc import CALC_TOOL, run_calculation
 
 BASE    = os.environ.get("SKINANALYTICA_BASE",
           r"C:\Users\tejan\OneDrive\Desktop\drive\SkinAnalytica")
@@ -187,12 +188,49 @@ class ResearchAssistant:
                 max_tokens = 800,
                 system     = SYSTEM_PROMPT,
                 messages   = messages,
+                tools      = [CALC_TOOL],
             )
+            if resp.stop_reason == "tool_use":
+                return self._handle_tool_use(client, messages, resp)
             return resp.content[0].text
         except ImportError:
             return self._fallback_knowledge(question)
         except Exception as e:
             return f"[Knowledge layer unavailable: {e}]\n\n{self._fallback_knowledge(question)}"
+
+    def _handle_tool_use(self, client, messages: list, resp) -> str:
+        """Run any requested tool calls through the sandbox (see
+        sandboxed_calc.py), send the results back to Claude, and return
+        its final text. Bounded to a single round-trip — a calculator,
+        not an open-ended agent loop."""
+        tool_results = []
+        for block in resp.content:
+            if block.type != "tool_use":
+                continue
+            if block.name == "run_calculation":
+                outcome = run_calculation(block.input["code"])
+                content = outcome.get("result") or f"ERROR: {outcome.get('error')}"
+            else:
+                content = f"ERROR: unknown tool '{block.name}'"
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": content,
+            })
+
+        follow_up = messages + [
+            {"role": "assistant", "content": resp.content},
+            {"role": "user", "content": tool_results},
+        ]
+        final = client.messages.create(
+            model      = "claude-sonnet-4-6",
+            max_tokens = 800,
+            system     = SYSTEM_PROMPT,
+            messages   = follow_up,
+            tools      = [CALC_TOOL],
+        )
+        text_blocks = [b.text for b in final.content if b.type == "text"]
+        return "\n".join(text_blocks) if text_blocks else "(calculation ran, but no answer text was returned)"
 
     def _fallback_knowledge(self, question: str) -> str:
         """Fallback answers for common knowledge questions without Claude API."""
