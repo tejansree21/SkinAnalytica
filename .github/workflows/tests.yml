@@ -1,0 +1,43 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # tests/test_sandboxed_calc.py imports the universal-sandbox project
+      # as a sibling directory (same layout as local dev) — that's a
+      # private repo, so this needs a PAT with read access to it stored as
+      # SANDBOX_CHECKOUT_PAT.
+      - name: Checkout universal-sandbox (sibling, for sandboxed_calc tests)
+        uses: actions/checkout@v4
+        with:
+          repository: tejansree21/universal-sandbox
+          # `path` is relative to $GITHUB_WORKSPACE (inside the main
+          # checkout) by default — `../` lands it as a true sibling,
+          # matching sandboxed_calc.py's parents[2] lookup.
+          path: ../universal-sandbox
+          token: ${{ secrets.SANDBOX_CHECKOUT_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest PyYAML
+
+      - name: Run test suite
+        run: pytest tests/ -v
+        # Large model checkpoints and datasets are gitignored and won't be
+        # present in this checkout — tests that need them (GPU inference
+        # regression, anything under data/) skip gracefully via
+        # tests/conftest.py's CHECKPOINTS_PRESENT/MODEL_FILES_PRESENT
+        # guards rather than failing. Only the pure-logic tests (inference
+        # math, verdict/threshold selection, config-consistency) run here.
