@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SkinAnalytica — API &amp; Status</title>
+<link rel="stylesheet" href="assets/theme.css">
+<script src="env_config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/nav.js" defer></script>
+<style>
+  .head{ padding:44px 0 32px }
+  .head h1{ font-size:32px; margin:0 0 8px }
+  .head .sub{ color:var(--ink-soft); max-width:60ch }
+
+  .grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:20px; margin-bottom:20px }
+  @media (max-width:860px){ .grid{ grid-template-columns:1fr } }
+
+  .panel{ padding:24px }
+  .panel h2{ font-size:13px; margin:0 0 16px }
+
+  .big-status{ display:flex; align-items:center; gap:14px; padding:6px 0 18px }
+  .big-dot{ width:16px; height:16px; border-radius:50%; background:var(--ink-faint); flex:none; position:relative }
+  .big-dot.up{ background:var(--good) }
+  .big-dot.up::after{ content:""; position:absolute; inset:-6px; border-radius:50%; border:2px solid var(--good); opacity:.5; animation:pulse 2s ease-out infinite }
+  .big-dot.down{ background:var(--crit) }
+  @keyframes pulse{ 0%{ transform:scale(.6); opacity:.6 } 100%{ transform:scale(1.8); opacity:0 } }
+  @media (prefers-reduced-motion:reduce){ .big-dot::after{ animation:none } }
+  .big-status .txt .top{ font-weight:800; font-size:16px }
+  .big-status .txt .sub{ font-size:12.5px; color:var(--ink-faint) }
+
+  .kv{ display:grid; grid-template-columns:1fr auto; gap:10px 16px; font-size:13.5px }
+  .kv .k{ color:var(--ink-faint) }
+  .kv .v{ font-weight:700; text-align:right }
+
+  .weight-bars{ display:flex; flex-direction:column; gap:10px; margin-top:6px }
+  .wrow{ display:grid; grid-template-columns:120px 1fr 48px; gap:10px; align-items:center; font-size:12.5px }
+  .wrow .track{ height:8px; border-radius:4px; background:var(--rule-soft); overflow:hidden }
+  .wrow .fill{ height:100%; background:var(--brass); border-radius:4px; transition:width .5s }
+
+  .links{ display:flex; flex-direction:column; gap:10px; margin-top:6px }
+  .linkcard{
+    display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-radius:10px;
+    background:var(--paper-2); border:1px solid var(--rule); text-decoration:none; transition:border-color .15s;
+  }
+  .linkcard:hover{ border-color:var(--brass) }
+  .linkcard .t{ font-weight:700; font-size:13.5px; color:var(--ink) }
+  .linkcard .d{ font-size:11.5px; color:var(--ink-faint); margin-top:2px }
+  .linkcard .arrow{ color:var(--brass-ink); font-size:16px }
+
+  .try-box{ margin-top:8px }
+  .try-row{ display:flex; gap:8px }
+  .try-row input{
+    flex:1; padding:9px 11px; border-radius:8px; border:1px solid var(--rule); background:var(--paper-2);
+    color:var(--ink); font-family:ui-monospace,monospace; font-size:12.5px;
+  }
+  .try-out{
+    margin-top:10px; background:var(--paper-2); border:1px solid var(--rule); border-radius:8px; padding:12px 14px;
+    font-size:12px; max-height:220px; overflow:auto; white-space:pre-wrap; word-break:break-all;
+  }
+
+  .refresh-note{ font-size:11.5px; color:var(--ink-faint); margin-top:14px }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<nav class="nav">
+  <div class="nav-brand"><span class="ring" aria-hidden="true"></span> SkinAnalytica</div>
+  <div class="nav-links" id="navLinks">
+    <a href="index.html">Analyze</a>
+    <a href="docs.html">Docs</a>
+    <a href="status.html" class="active" aria-current="page">API &amp; Status</a>
+    <a href="limitations.html">Limitations</a>
+  </div>
+  <div class="nav-actions">
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <div id="authWidget"></div>
+  </div>
+</nav>
+
+<main class="wrap" id="main">
+  <div class="head">
+    <h1 class="display">API &amp; Status</h1>
+    <div class="sub">Live health check against the running backend, current model configuration, and links to the auto-generated API reference.</div>
+  </div>
+
+  <div class="grid">
+    <div class="card panel">
+      <h2 class="label">Backend health</h2>
+      <div class="big-status" aria-live="polite" aria-atomic="true">
+        <div class="big-dot" id="bigDot" aria-hidden="true"></div>
+        <div class="txt">
+          <div class="top" id="statusTop">Checking…</div>
+          <div class="sub" id="statusSub">Contacting API</div>
+        </div>
+      </div>
+      <div class="kv" id="healthKv">
+        <div class="k">Version</div><div class="v mono">—</div>
+        <div class="k">Model</div><div class="v mono">—</div>
+        <div class="k">Mode</div><div class="v mono">—</div>
+        <div class="k">Checked</div><div class="v mono">—</div>
+      </div>
+      <div class="refresh-note">Auto-refreshes every 15s · <span id="baseUrl" class="mono"></span></div>
+    </div>
+
+    <div class="card panel">
+      <h2 class="label">Ensemble weights</h2>
+      <div id="weightsArea" class="weight-bars" aria-live="polite" aria-atomic="true">
+        <div style="font-size:12.5px; color:var(--ink-faint)">Loading /models…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card panel">
+      <h2 class="label">API reference</h2>
+      <div class="links">
+        <a class="linkcard" id="swaggerLink" href="#" target="_blank">
+          <div><div class="t">Swagger UI</div><div class="d">Interactive, auto-generated from the live API — try any endpoint</div></div>
+          <div class="arrow">→</div>
+        </a>
+        <a class="linkcard" id="redocLink" href="#" target="_blank">
+          <div><div class="t">ReDoc</div><div class="d">Readable reference view of the same OpenAPI schema</div></div>
+          <div class="arrow">→</div>
+        </a>
+        <a class="linkcard" id="openapiLink" href="#" target="_blank">
+          <div><div class="t">openapi.json</div><div class="d">Raw schema, for generating clients</div></div>
+          <div class="arrow">→</div>
+        </a>
+        <a class="linkcard" href="docs.html">
+          <div><div class="t">Written docs</div><div class="d">Endpoint-by-endpoint reference on this site</div></div>
+          <div class="arrow">→</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="card panel">
+      <h2 class="label">Try /audit/log</h2>
+      <div class="try-box">
+        <label for="limitInput" class="sr-only">Result limit</label>
+        <div class="try-row">
+          <input type="number" id="limitInput" value="5" min="1" max="50">
+          <button class="btn btn-brass" id="tryBtn" style="white-space:nowrap">Run</button>
+        </div>
+        <div class="try-out mono" id="tryOut" aria-live="polite">Not run yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card panel">
+      <h2 class="label">Try /report/{id}</h2>
+      <div class="try-box">
+        <label for="scanIdInput" class="sr-only">Scan ID</label>
+        <div class="try-row">
+          <input type="text" id="scanIdInput" placeholder="scan_id, e.g. from a recent /analyze call">
+          <button class="btn btn-brass" id="tryReportBtn" style="white-space:nowrap">Run</button>
+        </div>
+        <div class="try-out mono" id="tryReportOut" aria-live="polite">Not run yet.</div>
+      </div>
+    </div>
+
+    <div class="card panel">
+      <h2 class="label">Try /patient/{id}/history</h2>
+      <div class="try-box">
+        <label for="patientIdInput" class="sr-only">Patient ID</label>
+        <div class="try-row">
+          <input type="text" id="patientIdInput" placeholder="patient_id used on a prior /analyze call">
+          <button class="btn btn-brass" id="tryHistoryBtn" style="white-space:nowrap">Run</button>
+        </div>
+        <div class="try-out mono" id="tryHistoryOut" aria-live="polite">Not run yet.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site">SkinAnalytica · Research build · <a href="index.html">Back to Analyze</a></footer>
+
+<script>
+const base = (window.SA_CONFIG && window.SA_CONFIG.API_BASE) || 'http://localhost:8001';
+document.getElementById('baseUrl').textContent = base;
+document.getElementById('swaggerLink').href = base + '/docs';
+document.getElementById('redocLink').href = base + '/redoc';
+document.getElementById('openapiLink').href = base + '/openapi.json';
+
+async function checkHealth(){
+  const dot = document.getElementById('bigDot');
+  try {
+    const res = await fetch(base + '/health', { signal: AbortSignal.timeout(4000) });
+    const d = await res.json();
+    dot.className = 'big-dot up';
+    document.getElementById('statusTop').textContent = 'Operational';
+    document.getElementById('statusSub').textContent = base;
+    document.getElementById('healthKv').innerHTML = `
+      <div class="k">Version</div><div class="v mono">${d.version ?? '—'}</div>
+      <div class="k">Model</div><div class="v mono">${d.model_name ?? d.model ?? '—'}</div>
+      <div class="k">Mode</div><div class="v mono">${d.mode ?? '—'}</div>
+      <div class="k">Checked</div><div class="v mono">${new Date().toLocaleTimeString()}</div>`;
+  } catch (e) {
+    dot.className = 'big-dot down';
+    document.getElementById('statusTop').textContent = 'Unreachable';
+    document.getElementById('statusSub').textContent = `Could not reach ${base}`;
+  }
+}
+
+async function loadModels(){
+  const area = document.getElementById('weightsArea');
+  try {
+    const res = await fetch(base + '/models', { signal: AbortSignal.timeout(4000) });
+    const d = await res.json();
+    const metrics = d.metrics || {};
+    let html = `<div class="kv" style="margin-bottom:14px">
+      <div class="k">Ensemble</div><div class="v mono">${d.ensemble ?? '—'}</div>
+      <div class="k">MelAUC</div><div class="v mono">${metrics.mel_auc ? metrics.mel_auc.toFixed(4) : '—'}</div>
+      <div class="k">Sensitivity</div><div class="v mono">${metrics.sensitivity ? (metrics.sensitivity*100).toFixed(1)+'%' : '—'}</div>
+      <div class="k">Specificity</div><div class="v mono">${metrics.specificity ? (metrics.specificity*100).toFixed(1)+'%' : '—'}</div>
+    </div>`;
+    area.innerHTML = html;
+  } catch (e) {
+    area.innerHTML = `<div style="font-size:12.5px; color:var(--crit)">Could not load /models — is the API running?</div>`;
+  }
+}
+
+document.getElementById('tryBtn').addEventListener('click', async () => {
+  const out = document.getElementById('tryOut');
+  const limit = document.getElementById('limitInput').value || 5;
+  out.textContent = 'Running…';
+  try {
+    const res = await fetch(`${base}/audit/log?limit=${limit}`, { headers: SA_AUTH.headers() });
+    if (res.status === 401) { out.textContent = '401 — click 🔑 Add API key in the top-right, then try again.'; return; }
+    const d = await res.json();
+    out.textContent = JSON.stringify(d, null, 2);
+  } catch (e) {
+    out.textContent = 'Error: ' + e.message;
+  }
+});
+
+async function runIdLookup(path, inputId, outId, emptyMsg){
+  const out = document.getElementById(outId);
+  const id = document.getElementById(inputId).value.trim();
+  if (!id) { out.textContent = emptyMsg; return; }
+  out.textContent = 'Running…';
+  try {
+    const res = await fetch(`${base}${path(id)}`, { headers: SA_AUTH.headers() });
+    if (res.status === 401) { out.textContent = '401 — click 🔑 Add API key in the top-right, then try again.'; return; }
+    if (res.status === 404) { out.textContent = `404 — ${await res.text()}`; return; }
+    const d = await res.json();
+    out.textContent = JSON.stringify(d, null, 2);
+  } catch (e) {
+    out.textContent = 'Error: ' + e.message;
+  }
+}
+
+document.getElementById('tryReportBtn').addEventListener('click', () =>
+  runIdLookup(id => `/report/${encodeURIComponent(id)}`, 'scanIdInput', 'tryReportOut', 'Enter a scan ID first.'));
+
+document.getElementById('tryHistoryBtn').addEventListener('click', () =>
+  runIdLookup(id => `/patient/${encodeURIComponent(id)}/history`, 'patientIdInput', 'tryHistoryOut', 'Enter a patient ID first.'));
+
+checkHealth();
+loadModels();
+setInterval(checkHealth, 15000);
+SA_AUTH.mountWidget(document.getElementById('authWidget'));
+</script>
+</body>
+</html>

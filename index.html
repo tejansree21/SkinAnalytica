@@ -1,347 +1,365 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SkinAnalytica</title>
-<script>
-// SkinAnalytica env config — inlined to avoid 404
-(function() {
-  const hostname = window.location.hostname;
-  const isLocal  = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
-  let API_BASE, ASSISTANT_BASE, DELIVERY_BASE;
-  if (isLocal) {
-    API_BASE       = 'http://localhost:8001';
-    ASSISTANT_BASE = 'http://localhost:8002';
-    DELIVERY_BASE  = 'http://localhost:8003';
-  } else {
-    API_BASE       = 'https://skinanalytica-api.onrender.com';
-    ASSISTANT_BASE = 'https://skinanalytica-assistant.onrender.com';
-    DELIVERY_BASE  = 'https://skinanalytica-delivery.onrender.com';
-  }
-  window.SA_CONFIG = { API_BASE, ASSISTANT_BASE, DELIVERY_BASE,
-    ENV: isLocal ? 'local' : 'production' };
-  console.log('[SkinAnalytica] Config:', window.SA_CONFIG);
-})();
-</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SkinAnalytica — Dermoscopy Analysis</title>
+<link rel="stylesheet" href="assets/theme.css">
+<script src="env_config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/nav.js" defer></script>
 <style>
-  :root {
-    --bg:      #080808;
-    --surface: #111111;
-    --surface2:#1a1a1a;
-    --border:  #2a2a2a;
-    --border2: #333333;
-    --red:     #dc2626;
-    --red2:    #ef4444;
-    --red3:    #fca5a5;
-    --green2:  #4ade80;
-    --amber2:  #fbbf24;
-    --text:    #f5f5f5;
-    --muted:   #525252;
-    --subtle:  #a3a3a3;
+  .hero{ padding:56px 0 40px; text-align:center }
+  .hero .label{ display:inline-flex; align-items:center; gap:8px; margin-bottom:16px }
+  .hero .label::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--brass) }
+  .hero h1{ font-size:clamp(30px,4.6vw,46px); margin:0 0 12px; line-height:1.06 }
+  .hero p{ color:var(--ink-soft); max-width:56ch; margin:0 auto; font-size:16px }
+
+  .stage{
+    display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-bottom:20px; align-items:start;
+  }
+  @media (max-width:880px){ .stage{ grid-template-columns:1fr } }
+
+  .panel{ padding:26px }
+  .panel h2{ font-size:13px; margin:0 0 18px; }
+
+  /* ---- dropzone ---- */
+  .drop{
+    border:2px dashed var(--rule); border-radius:12px; padding:36px 20px; text-align:center;
+    cursor:pointer; transition:border-color .15s, background .15s; position:relative;
+  }
+  .drop:hover, .drop.drag{ border-color:var(--brass); background:var(--brass-soft) }
+  /* sr-only, not display:none -- a display:none input can't receive focus at
+     all, which made this dropzone completely unreachable via keyboard */
+  .drop input{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+    clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+  .drop .glyph{
+    width:52px; height:52px; margin:0 auto 14px; border-radius:50%; border:2.5px solid var(--brass);
+    display:flex; align-items:center; justify-content:center; position:relative;
+  }
+  .drop .glyph::after{ content:""; width:14px; height:14px; border-radius:50%; background:var(--brass) }
+  .drop .title{ font-weight:700; margin-bottom:4px }
+  .drop .sub{ font-size:13px; color:var(--ink-faint) }
+  .preview-img{ max-width:100%; max-height:260px; border-radius:10px; display:block; margin:0 auto; }
+
+  .fields{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px }
+  .field{ display:flex; flex-direction:column; gap:6px }
+  .field label{ font-size:12px; font-weight:600; color:var(--ink-soft) }
+  .field input, .field select{
+    padding:9px 11px; border-radius:8px; border:1px solid var(--rule); background:var(--paper-2);
+    color:var(--ink); font-size:13.5px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--brass); outline-offset:1px }
+  details.adv{ margin-top:12px }
+  details.adv summary{ cursor:pointer; font-size:12.5px; color:var(--ink-faint); font-weight:600; user-select:none }
+
+  .submit-row{ display:flex; gap:10px; margin-top:18px }
+
+  /* ---- results / lens ---- */
+  .lens-wrap{ display:flex; flex-direction:column; align-items:center; gap:14px; padding:8px 0 6px }
+  .lens{ position:relative; width:172px; height:172px; }
+  .lens svg{ width:100%; height:100%; transform:rotate(-90deg) }
+  .lens .ring-bg{ fill:none; stroke:var(--rule-soft); stroke-width:9 }
+  .lens .ring-fg{ fill:none; stroke-width:9; stroke-linecap:round; transition:stroke-dasharray .6s ease, stroke .3s }
+  .lens-center{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .lens-center .pct{ font-size:30px; font-weight:800; letter-spacing:-.02em }
+  .lens-center .cls{ font-size:11.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.08em; margin-top:2px }
+
+  .verdict-row{ display:flex; justify-content:center; margin-top:2px }
+
+  .spectrum{ margin-top:20px; display:flex; flex-direction:column; gap:9px }
+  .spec-row{ display:grid; grid-template-columns:70px 1fr 44px; align-items:center; gap:10px }
+  .spec-row .name{ font-size:12.5px; color:var(--ink-soft); font-weight:600 }
+  .spec-row .track{ height:7px; border-radius:4px; background:var(--rule-soft); overflow:hidden }
+  .spec-row .fill{ height:100%; border-radius:4px; background:var(--teal); transition:width .5s ease }
+  .spec-row.top .fill{ background:var(--brass) }
+  .spec-row .val{ font-size:12px; text-align:right; color:var(--ink-faint) }
+
+  .empty-state{ text-align:center; padding:44px 10px; color:var(--ink-faint) }
+  .empty-state .ring-empty{
+    width:64px; height:64px; margin:0 auto 14px; border-radius:50%; border:2.5px dashed var(--rule);
   }
 
-  * { margin:0; padding:0; box-sizing:border-box; }
+  .meta-strip{ display:flex; gap:16px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid var(--rule); font-size:12px; color:var(--ink-faint) }
+  .meta-strip b{ color:var(--ink-soft) }
 
-  body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+  .disclaimer{
+    margin-top:24px; padding:14px 18px; border-radius:10px; background:var(--warn-soft); color:var(--warn);
+    font-size:12.5px; line-height:1.5; display:flex; gap:10px;
   }
+  .disclaimer svg{ flex:none; margin-top:1px }
 
-  /* ── Nav ──────────────────────────────────────────── */
-  nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 2.5rem;
-    height: 56px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(8,8,8,0.95);
-    backdrop-filter: blur(16px);
-    position: sticky;
-    top: 0;
-    z-index: 200;
-    flex-shrink: 0;
+  .type-warning{
+    margin-bottom:18px; padding:12px 14px; border-radius:10px; background:var(--crit-soft); color:var(--crit);
+    font-size:12.5px; line-height:1.5; display:flex; gap:9px;
   }
+  .type-warning svg{ flex:none; margin-top:1px }
 
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: 1.05rem;
-    font-weight: 700;
-    text-decoration: none;
-    color: var(--text);
-    cursor: pointer;
-  }
-
-  .logo-icon {
-    width: 30px; height: 30px;
-    background: var(--red);
-    border-radius: 7px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-    box-shadow: 0 0 12px rgba(220,38,38,0.4);
-  }
-
-  .logo span { color: var(--red2); }
-
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    list-style: none;
-  }
-
-  .nav-links a {
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 0.82rem;
-    font-weight: 500;
-    padding: 0.4rem 0.85rem;
-    border-radius: 6px;
-    transition: all 0.15s;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .nav-links a:hover { color: var(--text); background: var(--surface); }
-  .nav-links a.active { color: var(--text); background: var(--surface2); border: 1px solid var(--border2); }
-
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .api-dot {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.7rem;
-    color: var(--subtle);
-    border: 1px solid var(--border2);
-    padding: 0.22rem 0.65rem;
-    border-radius: 20px;
-  }
-
-  .api-dot .dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: var(--muted);
-  }
-
-  .api-dot.live .dot {
-    background: var(--green2);
-    box-shadow: 0 0 5px var(--green2);
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
-
-  .nav-badge {
-    background: var(--red);
-    color: white;
-    font-size: 0.68rem;
-    font-weight: 700;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    letter-spacing: 0.4px;
-  }
-
-  /* ── Page frame ──────────────────────────────────── */
-  #page-frame {
-    flex: 1;
-    width: 100%;
-    border: none;
-    display: block;
-    min-height: calc(100vh - 57px);
-  }
-
-  /* ── Loading bar ─────────────────────────────────── */
-  #loading-bar {
-    position: fixed;
-    top: 56px;
-    left: 0;
-    height: 2px;
-    width: 0%;
-    background: var(--red);
-    z-index: 300;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 8px var(--red);
-  }
-
-  /* ── Toast ───────────────────────────────────────── */
-  #toast {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    background: var(--surface);
-    border: 1px solid rgba(220,38,38,0.35);
-    border-radius: 9px;
-    padding: 0.85rem 1.1rem;
-    font-size: 0.8rem;
-    max-width: 300px;
-    z-index: 9999;
-    transform: translateY(80px);
-    opacity: 0;
-    transition: all 0.25s;
-  }
-
-  #toast.show { transform: translateY(0); opacity: 1; }
-  .toast-title { font-weight: 700; color: var(--red2); margin-bottom: 0.2rem; font-size:0.78rem; }
-
-  @media (max-width: 640px) {
-    nav { padding: 0 1rem; }
-    .nav-badge { display: none; }
-  }
+  .spinner{ width:16px; height:16px; border-radius:50%; border:2.5px solid rgba(0,0,0,.15); border-top-color:currentColor; animation:spin .7s linear infinite }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+  @media (prefers-reduced-motion:reduce){ .spinner{ animation:none } }
 </style>
 </head>
 <body>
 
-<div id="loading-bar"></div>
+<a class="skip-link" href="#main">Skip to main content</a>
 
-<nav>
-  <div class="logo" onclick="navigate('home')">
-    <div class="logo-icon">🔬</div>
-    Skin<span>Analytica</span>
+<nav class="nav">
+  <div class="nav-brand"><span class="ring" aria-hidden="true"></span> SkinAnalytica</div>
+  <div class="nav-links" id="navLinks">
+    <a href="index.html" class="active" aria-current="page">Analyze</a>
+    <a href="docs.html">Docs</a>
+    <a href="status.html">API &amp; Status</a>
+    <a href="limitations.html">Limitations</a>
   </div>
-
-  <ul class="nav-links">
-    <li><a id="nav-home"      onclick="navigate('home')"      class="active">Home</a></li>
-    <li><a id="nav-analyze"   onclick="navigate('analyze')"  >Analyze</a></li>
-    <li><a id="nav-research"  onclick="navigate('research')" >Research</a></li>
-    <li><a id="nav-assistant" onclick="navigate('assistant')">Assistant</a></li>
-    <li><a id="nav-agents"    onclick="navigate('agents')"   >Agents</a></li>
-    <li><a id="nav-api"       onclick="navigate('api')"      >API Docs</a></li>
-    <li><a id="nav-sessions"  onclick="navigate('sessions')" >Sessions</a></li>
-  </ul>
-
-  <div class="nav-right">
-    <div class="api-dot" id="api-pill">
-      <span class="dot"></span>
-      <span id="api-text">checking...</span>
-    </div>
-    <div class="nav-badge">ISIC QA v1.1</div>
+  <div class="nav-actions">
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <div id="authWidget"></div>
   </div>
 </nav>
 
-<iframe id="page-frame" src="pages/home.html"></iframe>
+<main class="wrap" id="main">
+  <div class="hero">
+    <div class="label">SEVEN-CLASS DERMOSCOPY MODEL</div>
+    <h1 class="display">Point a lens at a lesion.<br>Read the signal.</h1>
+    <p>Upload a dermoscopic image for an ensemble classification across melanoma, nevus, and five other lesion types — with confidence, verdict, and full per-class breakdown.</p>
+  </div>
 
-<div id="toast">
-  <div class="toast-title" id="toast-title">Notice</div>
-  <div id="toast-body"></div>
-</div>
+  <div class="stage">
+    <!-- Upload panel -->
+    <div class="card panel">
+      <h2 class="label">01 — Input</h2>
+      <form id="analyzeForm">
+        <label class="drop" id="dropzone">
+          <input type="file" id="fileInput" accept="image/*">
+          <div id="dropContent">
+            <div class="glyph" aria-hidden="true"></div>
+            <div class="title">Drop a dermoscopy image</div>
+            <div class="sub">or click to browse · JPEG, PNG, TIFF, BMP · max 20MB</div>
+          </div>
+          <img id="previewImg" class="preview-img" style="display:none" alt="">
+        </label>
+
+        <div class="fields">
+          <div class="field">
+            <label for="patientAge">Patient age (optional)</label>
+            <input type="number" id="patientAge" min="0" max="120" placeholder="e.g. 54">
+          </div>
+          <div class="field">
+            <label for="patientSex">Patient sex (optional)</label>
+            <select id="patientSex">
+              <option value="">—</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+        </div>
+
+        <details class="adv">
+          <summary>Advanced: capture mode &amp; skin tone</summary>
+          <div class="fields" style="margin-top:10px">
+            <div class="field">
+              <label for="captureMode">Capture mode</label>
+              <select id="captureMode">
+                <option value="">Dermatoscope (default)</option>
+                <option value="tbp">3D total-body photography</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="skinTone">Skin tone class (0–5)</label>
+              <select id="skinTone">
+                <option value="">—</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+          </div>
+        </details>
+
+        <div class="submit-row">
+          <button type="submit" class="btn btn-brass" id="submitBtn" disabled>Analyze image</button>
+          <button type="button" class="btn btn-ghost" id="resetBtn">Reset</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Results panel -->
+    <div class="card panel">
+      <h2 class="label">02 — Reading</h2>
+      <div id="resultsArea" aria-live="polite" aria-atomic="true">
+        <div class="empty-state">
+          <div class="ring-empty" aria-hidden="true"></div>
+          <div style="font-weight:600; color:var(--ink-soft)">No image analyzed yet</div>
+          <div style="font-size:12.5px; margin-top:4px">Results will appear here once you submit an image.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1L15 14H1L8 1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v3.5M8 12v.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    <div>Research prototype — not a clinical diagnostic device. No regulatory clearance. Always confirm findings with a qualified clinician.</div>
+  </div>
+</main>
+
+<footer class="site">SkinAnalytica · Research build · <a href="status.html">System status</a></footer>
 
 <script>
-const PAGES = {
-  home     : 'pages/home.html',
-  analyze  : 'pages/analyze.html',
-  research : 'pages/research.html',
-  assistant: 'pages/assistant.html',
-  agents   : 'pages/agents.html',
-  api      : 'pages/api.html',
-  sessions : 'pages/sessions.html',
+const CLASS_NAMES = {
+  mel:"Melanoma", nv:"Nevus", bcc:"Basal Cell Carcinoma",
+  akiec:"Actinic Keratosis", bkl:"Benign Keratosis", df:"Dermatofibroma", vasc:"Vascular Lesion"
+};
+const VERDICT_META = {
+  NORMAL:          { pill:"pill-good", label:"Normal",          ring:"var(--good)" },
+  REVIEW_REQUIRED: { pill:"pill-warn", label:"Review Required",  ring:"var(--warn)" },
+  CANCER_FLAGGED:  { pill:"pill-crit", label:"Cancer Flagged",   ring:"var(--crit)" },
 };
 
-let currentPage = 'home';
-const bar = document.getElementById('loading-bar');
+const dropzone   = document.getElementById('dropzone');
+const fileInput  = document.getElementById('fileInput');
+const dropContent= document.getElementById('dropContent');
+const previewImg = document.getElementById('previewImg');
+const submitBtn  = document.getElementById('submitBtn');
+const resultsArea= document.getElementById('resultsArea');
+const form       = document.getElementById('analyzeForm');
 
-function navigate(page) {
-  
-  currentPage = page;
+let selectedFile = null;
 
-  // Update nav active state
-  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
-  const navEl = document.getElementById(`nav-${page}`);
-  if (navEl) navEl.classList.add('active');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) setFile(fileInput.files[0]); });
 
-  // Loading bar animation
-  bar.style.width = '30%';
-  setTimeout(() => bar.style.width = '70%', 100);
-
-  const frame = document.getElementById('page-frame');
-  frame.onload = () => {
-    bar.style.width = '100%';
-    setTimeout(() => { bar.style.width = '0%'; }, 300);
-  };
-  frame.src = PAGES[page];
-  document.title = `SkinAnalytica · ${page.charAt(0).toUpperCase()+page.slice(1)}`;
+function setFile(file){
+  selectedFile = file;
+  const url = URL.createObjectURL(file);
+  previewImg.src = url;
+  previewImg.alt = `Preview of ${file.name}`;
+  previewImg.style.display = 'block';
+  dropContent.style.display = 'none';
+  submitBtn.disabled = false;
 }
 
-// ── API health check ──────────────────────────────────
-async function checkApi() {
-  const pill   = document.getElementById('api-pill');
-  const txt    = document.getElementById('api-text');
-  const base   = window.SA_CONFIG?.API_BASE || 'http://localhost:8001';
-  const isRender = base.includes('onrender.com');
+document.getElementById('resetBtn').addEventListener('click', () => {
+  selectedFile = null;
+  fileInput.value = '';
+  previewImg.style.display = 'none';
+  dropContent.style.display = 'block';
+  submitBtn.disabled = true;
+  resultsArea.innerHTML = `
+    <div class="empty-state">
+      <div class="ring-empty" aria-hidden="true"></div>
+      <div style="font-weight:600; color:var(--ink-soft)">No image analyzed yet</div>
+      <div style="font-size:12.5px; margin-top:4px">Results will appear here once you submit an image.</div>
+    </div>`;
+});
 
-  // Show waking state immediately for Render
-  pill.className = 'api-dot';
-  txt.textContent = isRender ? 'waking...' : 'checking...';
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!selectedFile) return;
 
-  // Try with long timeout for Render cold start
-  const timeout = isRender ? 65000 : 5000;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Analyzing…';
+  resultsArea.innerHTML = `<div class="empty-state"><div class="ring-empty" aria-hidden="true"></div><div style="font-weight:600;color:var(--ink-soft)">Running inference…</div></div>`;
+
+  const fd = new FormData();
+  fd.append('file', selectedFile);
+  const age  = document.getElementById('patientAge').value;
+  const sex  = document.getElementById('patientSex').value;
+  const cap  = document.getElementById('captureMode').value;
+  const tone = document.getElementById('skinTone').value;
+  const params = new URLSearchParams();
+  if (age)  params.append('patient_age', age);
+  if (sex)  params.append('patient_sex', sex);
+  if (cap)  params.append('capture_mode', cap);
+  if (tone) params.append('skin_tone_class', tone);
+
+  const base = (window.SA_CONFIG && window.SA_CONFIG.API_BASE) || 'http://localhost:8001';
 
   try {
-    const res  = await fetch(base + '/health', { signal: AbortSignal.timeout(timeout) });
-    const data = await res.json();
-    if (data.status === 'ok') {
-      pill.className = 'api-dot live';
-      txt.textContent = `v${data.version} live`;
-      window.apiStatus = { live:true, version:data.version, model:data.model_name };
-      // Notify iframes
-      try { document.getElementById('page-frame').contentWindow.postMessage({type:'api-live',base}, '*'); } catch{}
+    const res = await fetch(`${base}/analyze?${params.toString()}`, {
+      method:'POST', body:fd, headers: SA_AUTH.headers()
+    });
+    if (res.status === 401) {
+      resultsArea.innerHTML = `<div class="empty-state"><div style="font-weight:600;color:var(--crit)">API key required</div><div style="font-size:12.5px;margin-top:8px">Click <b>🔑 Add API key</b> in the top-right, then try again.</div></div>`;
       return;
     }
-  } catch(e) {
-    console.log('Health check failed:', e.message);
+    if (res.status === 503) throw new Error('Server has no API key configured (503) — this is a server-side setup issue, not yours');
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const data = await res.json();
+    renderResult(data);
+  } catch (err) {
+    resultsArea.innerHTML = `<div class="empty-state"><div style="font-weight:600;color:var(--crit)">Analysis failed</div><div style="font-size:12.5px;margin-top:4px">${err.message}. Is the API running at ${base}?</div></div>`;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Analyze image';
   }
-  pill.className = 'api-dot';
-  txt.textContent = isRender ? 'sleeping (click to wake)' : 'offline';
-  window.apiStatus = { live:false };
+});
+
+SA_AUTH.mountWidget(document.getElementById('authWidget'));
+
+function renderResult(d){
+  const vm = VERDICT_META[d.verdict] || VERDICT_META.REVIEW_REQUIRED;
+  const pct = Math.round((d.confidence || 0) * 100);
+  const circumference = 2 * Math.PI * 76;
+  const dash = (pct/100) * circumference;
+
+  const probs = d.probs || {};
+  const rows = Object.entries(probs)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k,v], i) => `
+      <div class="spec-row ${i===0 ? 'top' : ''}">
+        <div class="name">${k.toUpperCase()}</div>
+        <div class="track"><div class="fill" style="width:${Math.round(v*100)}%"></div></div>
+        <div class="val mono">${(v*100).toFixed(1)}%</div>
+      </div>`).join('');
+
+  const itc = d.image_type_check;
+  const showTypeWarning = itc && itc.likely_dermatoscope === false;
+  const typeWarningHtml = showTypeWarning ? `
+    <div class="type-warning">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1L15 14H1L8 1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v3.5M8 12v.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <div>This image has an unusually wide or tall aspect ratio for a dermatoscope capture. SkinAnalytica is validated on dermatoscope images only — results on other image types are unvalidated and may be meaningless. This is a narrow, low-confidence check (it only catches extreme cases) — not a guarantee either way.</div>
+    </div>` : '';
+
+  resultsArea.innerHTML = `
+    ${typeWarningHtml}
+    <div class="lens-wrap">
+      <div class="lens">
+        <svg viewBox="0 0 172 172" aria-hidden="true">
+          <circle class="ring-bg" cx="86" cy="86" r="76"/>
+          <circle class="ring-fg" cx="86" cy="86" r="76"
+            stroke="${vm.ring}"
+            stroke-dasharray="${dash} ${circumference}"/>
+        </svg>
+        <div class="lens-center">
+          <div class="pct mono">${pct}%</div>
+          <div class="cls">${CLASS_NAMES[d.pred_class] || d.pred_class}</div>
+        </div>
+      </div>
+      <div class="verdict-row"><span class="pill ${vm.pill}">${vm.label}</span></div>
+    </div>
+    <div class="spectrum">${rows}</div>
+    <div class="meta-strip">
+      <span><b>Threshold used</b> ${d.mel_threshold_used ?? '—'}</span>
+      <span><b>Model</b> ${d.model_used ?? '—'}</span>
+      <span><b>Latency</b> ${d.latency_ms ?? '—'}ms</span>
+      <span><b>Scan ID</b> ${d.scan_id ?? '—'}</span>
+    </div>
+  `;
 }
 
-// Wake Render on click
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('api-pill').addEventListener('click', () => {
-    const base = window.SA_CONFIG?.API_BASE || 'http://localhost:8001';
-    if(base.includes('onrender.com')) {
-      document.getElementById('api-text').textContent = 'waking...';
-      // Fire a request to wake it up, then recheck
-      fetch(base + '/health').catch(()=>{});
-      setTimeout(checkApi, 5000);
-    }
-  });
-});
-checkApi();
-setInterval(checkApi, 30000);
-// Keep Render awake every 10 min while page is open
-setInterval(() => {
-  const base = window.SA_CONFIG?.API_BASE || '';
-  if(base.includes('onrender.com')) {
-    fetch(base + '/health').catch(()=>{});
-  }
-}, 10 * 60 * 1000);
-
-
-// ── Global toast (callable from iframes) ─────────────
-window.showToast = function(title, body, duration=4000) {
-  const t = document.getElementById('toast');
-  document.getElementById('toast-title').textContent = title;
-  document.getElementById('toast-body').textContent  = body;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), duration);
-};
-
-// ── Allow iframes to navigate shell ──────────────────
-window.shellNavigate = navigate;
+// Wire the ring stroke-dasharray transition in from 0 on first paint.
 </script>
 </body>
 </html>

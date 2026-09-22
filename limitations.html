@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SkinAnalytica — Limitations</title>
+<link rel="stylesheet" href="assets/theme.css">
+<script src="env_config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/nav.js" defer></script>
+<style>
+  .layout{ display:grid; grid-template-columns:220px 1fr; gap:40px; padding-top:36px; align-items:start }
+  @media (max-width:820px){ .layout{ grid-template-columns:1fr } }
+
+  .toc{ position:sticky; top:80px; display:flex; flex-direction:column; gap:2px }
+  .toc a{
+    padding:7px 10px; border-radius:8px; font-size:13px; color:var(--ink-soft); text-decoration:none;
+    font-weight:600; transition:background .15s, color .15s;
+  }
+  .toc a:hover{ background:var(--paper-2) }
+  .toc a.active{ background:var(--brass-soft); color:var(--brass-ink) }
+
+  .content section{ margin-bottom:48px; scroll-margin-top:80px }
+  .content h1{ font-size:32px; margin:0 0 8px }
+  .content .sub{ color:var(--ink-soft); margin-bottom:28px; max-width:64ch; line-height:1.6 }
+  .content h2{ font-size:19px; margin:0 0 14px; padding-top:4px }
+  .content p{ color:var(--ink-soft); line-height:1.65; max-width:72ch }
+
+  .banner{
+    display:flex; gap:14px; align-items:flex-start; padding:18px 20px; border-radius:12px;
+    background:var(--crit-soft); color:var(--crit); margin-bottom:36px; font-size:14px; line-height:1.6;
+  }
+  .banner b{ display:block; font-size:15px; margin-bottom:2px }
+
+  .gap{
+    background:var(--panel); border:1px solid var(--rule); border-radius:12px; padding:18px 20px;
+    margin-bottom:14px; box-shadow:var(--shadow);
+  }
+  .gap-head{ display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap }
+  .gap-title{ font-weight:700; font-size:14.5px }
+  .gap p{ font-size:13.5px; margin:0 }
+  .gap .ev{ font-size:12px; color:var(--ink-faint); margin-top:10px }
+  .gap .ev code{ font-size:11.5px }
+
+  .closed-list{ font-size:13.5px; color:var(--ink-soft); line-height:1.9; padding-left:20px }
+  .closed-list li b{ color:var(--ink) }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<nav class="nav">
+  <div class="nav-brand"><span class="ring" aria-hidden="true"></span> SkinAnalytica</div>
+  <div class="nav-links" id="navLinks">
+    <a href="index.html">Analyze</a>
+    <a href="docs.html">Docs</a>
+    <a href="status.html">API &amp; Status</a>
+    <a href="limitations.html" class="active" aria-current="page">Limitations</a>
+  </div>
+  <div class="nav-actions">
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <div id="authWidget"></div>
+  </div>
+</nav>
+
+<div class="wrap">
+<div class="layout">
+  <nav class="toc" id="toc" aria-label="Limitations sections">
+    <a href="#overview">Overview</a>
+    <a href="#generalization">External generalization</a>
+    <a href="#preprocessing">Preprocessing change</a>
+    <a href="#fairness">Skin-tone fairness</a>
+    <a href="#scope">Out of scope</a>
+    <a href="#rigor">Statistical rigor</a>
+    <a href="#uncertainty">Uncertainty &amp; precision</a>
+    <a href="#licensing">Data &amp; licensing</a>
+    <a href="#onhold">On hold</a>
+    <a href="#coverage">Test coverage</a>
+    <a href="#closed">Previously found, now closed</a>
+  </nav>
+
+  <main class="content" id="main">
+    <section id="overview">
+      <h1 class="display">Limitations</h1>
+      <div class="sub">Every open gap in SkinAnalytica, in one place, each with its current status and a pointer to the evidence. This page exists so a limitation can't be quietly left out of the story that gets told about this system — it's the same discipline behind <code>docs/MODEL_CARD.md</code> and <code>docs/KNOWN_GAPS.md</code>, written for a reader who isn't going to open either file.</div>
+
+      <div class="banner">
+        <div>
+          <b>Research prototype — not clinically validated</b>
+          No regulatory clearance in any jurisdiction. Nothing on this site or from this API is a diagnosis or a substitute for a dermatologist. See <code>docs/REGULATORY_POSITIONING.md</code> for what would need to change before that could be true.
+        </div>
+      </div>
+    </section>
+
+    <section id="generalization">
+      <h2 class="label">External generalization</h2>
+
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-warn">Partial</span><span class="gap-title">Discrimination transfers, the operating threshold doesn't</span></div>
+        <p>On the largest leakage-free external holdout available (n=143), AUC is 0.6131 (95% CI [0.5516, 0.6751]) — real, statistically significant discrimination. But the deployed threshold only delivers 42.7% sensitivity on this population, and no single threshold hits 80% sensitivity without specificity collapsing to 15.6%. This is a calibration-transfer problem, not a discrimination problem — diagnosed, not yet fixed.</p>
+        <div class="ev">Evidence: MODEL_CARD.md findings #5, #11, #12</div>
+      </div>
+
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-teal">Mitigated</span><span class="gap-title">Two separate root causes, two different fixes</span></div>
+        <p>Direct visual inspection of preprocessed images (not just more score-level statistics) found two opposite mechanisms behind external-population failures: SLICE-3D's source images are tiny (median 128px), a genuine resolution ceiling; MRA-MIDAS's are huge (median 3024×4032) with the lesion occupying a small fraction of the frame, so naive full-frame resizing wastes detail on background. A center-crop fix for the second mechanism is now shipped (see below) — the resolution-ceiling problem has no fix yet, since closing it needs retraining with resolution-robustness augmentation.</p>
+        <div class="ev">Evidence: MODEL_CARD.md finding #21</div>
+      </div>
+
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-warn">Open</span><span class="gap-title">Melanoma-specific discrimination on MRA-MIDAS is still weak</span></div>
+        <p>MelAUC (melanoma vs. everything else) on MRA-MIDAS is 0.54-0.58 — genuinely weak, unaffected by any fix shipped so far. The broader malignant-vs-benign question (can the model tell any cancerous lesion apart from benign ones) is a real, solid 0.70-0.74 — a metric-definition bug in an earlier read of this result made it look like near/below-chance collapse across the board, which it was not; see the preprocessing section below for the metric fix itself. The narrower melanoma-specific gap remains open.</p>
+        <div class="ev">Evidence: MODEL_CARD.md findings #20, #23</div>
+      </div>
+
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-good">Closed</span><span class="gap-title">A classical lesion-detecting crop was tried and lost — dead end, not open</span></div>
+        <p>A more sophisticated classical-CV lesion detector (find the lesion, crop tightly to it) was built, unit-tested, and ablated against the simpler center-crop on both external populations. It lost on every metric that survived the metric-definition fix — it doesn't beat center-crop on MRA-MIDAS, and it measurably hurts MILK10k. Documented as a closed, honestly-reported negative result so it isn't re-attempted blind. A genuine improvement over center-crop would need a properly <i>trained</i> segmentation model, not a better classical heuristic — see "On hold" below.</p>
+        <div class="ev">Evidence: MODEL_CARD.md finding #22</div>
+      </div>
+    </section>
+
+    <section id="preprocessing">
+      <h2 class="label">Preprocessing change (2026-07-28)</h2>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-good">Resolved</span><span class="gap-title">Center-crop shipped; all 4 operating thresholds now re-derived or confirmed</span></div>
+        <p>Center-crop-to-square before resizing is now the default preprocessing in production (validated: a real gain on MRA-MIDAS, negligible cost on MILK10k). Because AUC is rank-order-only, the discrimination numbers reported throughout this page and the model card are trustworthy under this change, but fixed probability thresholds are not — so all four were re-derivation candidates. Age-band and skin-tone thresholds were cleanly re-derived on their original populations and updated. The TBP threshold was confirmed exactly unchanged (SLICE-3D crops are already square, so center-crop is a no-op there — a useful sanity check that the whole exercise was measuring the right thing).</p>
+        <div class="ev">Evidence: MODEL_CARD.md finding #25, docs/KNOWN_GAPS.md</div>
+      </div>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-warn">Real change, not a bug</span><span class="gap-title">MEL_THRESHOLD moved from 0.2385 to 0.5010 — production verdict routing changed</span></div>
+        <p>The original validation set behind 0.2385 was never a saved, reusable file — it was computed ad hoc in an earlier session and no longer exists on disk. A first substitution attempt produced a misleading ~2x jump that did not survive a same-population control check (scoring the substitute population under both old and new preprocessing showed the real center-crop effect is a small ~8% <i>decrease</i>, not a 2x increase) — so that number was correctly not shipped at the time. Rather than leave the threshold stuck against an unrecoverable population indefinitely, <code>config/val.csv</code> — a real, on-disk, genuinely-held-out validation split — is now formally adopted as the documented manifest going forward, and the threshold set to what it actually takes to hit 80% sensitivity on it under center-crop: <b>0.5010</b>, with specificity improving 94.2% → 96.5% at that same sensitivity target. This changes production behavior for real requests, not just a model-card number — flagged prominently rather than left as a quiet config edit.</p>
+        <div class="ev">Evidence: MODEL_CARD.md finding #26, docs/KNOWN_GAPS.md</div>
+      </div>
+    </section>
+
+    <section id="fairness">
+      <h2 class="label">Skin-tone fairness</h2>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-warn">Partial</span><span class="gap-title">No confirmed disparity, but the extremes are unanswerable from available data</span></div>
+        <p>On MILK10k's dermoscopy holdout (overall MelAUC 0.8796, 95% CI [0.834, 0.921]), there's no statistically confirmed AUC disparity across the three adequately-sampled skin-tone bands. But the darkest (n=1) and lightest (n=51, only 2 melanoma) bands remain unanswerable from available data, and sensitivity at the deployed threshold spreads more (55.6%-76.9%) than AUC does — not yet confirmed as real vs. small-sample noise (13-28 melanoma cases per band).</p>
+        <div class="ev">Evidence: MODEL_CARD.md findings #9, #14</div>
+      </div>
+    </section>
+
+    <section id="scope">
+      <h2 class="label">Out of scope</h2>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-crit">Unsupported</span><span class="gap-title">Non-dermoscopic (clinical/phone-camera) images</span></div>
+        <p>Zero validated performance on ordinary phone photos — MelAUC 0.63-0.78 there vs. 0.95+ on real dermoscopy. SkinAnalytica is dermatoscope-only. There is no reliable automatic detector for the wrong image type; <code>/analyze</code>'s <code>image_type_check</code> field is a narrow, advisory aspect-ratio heuristic only (an earlier vignette-brightness signal was tested against real data, found unreliable, and dropped rather than shipped) — it flags genuinely extreme cases, never blocks inference, and should not be relied on as a real image-type classifier.</p>
+        <div class="ev">Evidence: MODEL_CARD.md finding #9, src/inference_utils.py's check_dermatoscope_likelihood()</div>
+      </div>
+    </section>
+
+    <section id="rigor">
+      <h2 class="label">Statistical rigor</h2>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-warn">Open</span><span class="gap-title">Metrics reflect a single train/val split, single seed</span></div>
+        <p>Confidence intervals throughout the model card come from bootstrap-resampling the existing scored predictions — that bounds sampling noise, not training-process variance. Real CIs on AUC/sensitivity would need k-fold or repeated-seed retraining of all three backbones, an order of magnitude more compute/time than anything done so far.</p>
+      </div>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-warn">Open, now with confidence intervals</span><span class="gap-title">Flagged-precision collapses at realistic screening prevalence</span></div>
+        <p>Automation rate looks strong (77-97%) at every prevalence tested, but <code>CANCER_FLAGGED</code> precision drops to roughly 4-45% (95% CI) at realistic low-prevalence screening case mixes, vs. 82-91% on the enriched validation samples this project has mostly reported against. A proper bootstrap now backs both the external MILK10k numbers and, for the first time, the ISIC-2020 natural-prevalence figure (21.8%, 95% CI [16.4%, 28.1%]) — real statistical rigor, not a single-draw estimate anymore. What's still open: no genuinely natural-prevalence, zero-leakage, dermatoscope-domain holdout exists to remove ISIC-2020's separate leakage caveat (it was almost certainly in the training pool) — the confidence interval narrows sampling uncertainty, it doesn't resolve that leakage question.</p>
+        <div class="ev">Evidence: MODEL_CARD.md findings #16, #19, #27</div>
+      </div>
+    </section>
+
+    <section id="uncertainty">
+      <h2 class="label">Uncertainty quantification</h2>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-good">Decided</span><span class="gap-title">Shipped the ONNX-only disagreement signal, not PyTorch-based MC-dropout</span></div>
+        <p>MC-dropout works correctly offline against the real PyTorch checkpoints, but the deployed API only loads ONNX exports (dropout baked to identity at export time) and production never installs PyTorch. On the one real false-negative case tested, MC-dropout and the ONNX-only disagreement signal fail identically — both miss a case where all three backbones agree confidently and are wrong together — so the free, already-built option was chosen over committing real infrastructure cost for a method that isn't shown to do better on that case. <code>SKINANALYTICA_ENABLE_UNCERTAINTY</code> now defaults to <code>true</code>. It's explicitly kept <code>false</code> for the one live deployment (Render's free tier), though: loading the disagreement backbones adds ~2.1GB of fp32 model files on top of the primary model, which would almost certainly crash that service. Either way, this signal still won't catch confidently-wrong-in-unison errors — that blind spot isn't solved, just consciously accepted rather than left as an unmade decision.</p>
+        <div class="ev">Evidence: MODEL_CARD.md findings #7, #28, docs/KNOWN_GAPS.md</div>
+      </div>
+    </section>
+
+    <section id="licensing">
+      <h2 class="label">Data &amp; licensing</h2>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-warn">Revisit before any commercial move</span><span class="gap-title">Two training/validation sources are non-commercial-only</span></div>
+        <p>MILK10k is CC-BY-NC; MRA-MIDAS sits behind a non-commercial research data-use agreement. Training and evaluating on both was approved on the basis that this project is currently research/academic work. If SkinAnalytica ever moves toward commercial deployment, this decision must be revisited — any model trained on them would need to be retired or retrained without them.</p>
+        <div class="ev">Evidence: docs/KNOWN_GAPS.md, "Licensing decision (2026-07-22)"</div>
+      </div>
+    </section>
+
+    <section id="onhold">
+      <h2 class="label">On hold — needs retraining</h2>
+      <p style="margin-bottom:14px">These are explicitly not being worked on right now because they require retraining one or more of the three CNN backbones, not just a preprocessing or configuration change.</p>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-teal">On hold</span><span class="gap-title">Mixing SLICE-3D's benign pool into the fusion training data (Path B, workstream 2)</span></div>
+        <p>A second Path B workstream, scoped but not started.</p>
+      </div>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-teal">On hold</span><span class="gap-title">SLICE-3D's resolution ceiling — needs resolution-robustness training augmentation</span></div>
+        <p>The root cause is understood (median 128px source crops), but fixing it means retraining with deliberately degraded/low-res augmentation, not a preprocessing change.</p>
+      </div>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-teal">Not started</span><span class="gap-title">A real trained lesion-segmentation model</span></div>
+        <p>The classical-CV lesion detector tried this session is a documented dead end (see above). A genuine improvement over center-crop needs an actual trained segmentation model — a real investment, scoped conceptually only.</p>
+      </div>
+    </section>
+
+    <section id="coverage">
+      <h2 class="label">Engineering coverage</h2>
+      <div class="gap">
+        <div class="gap-head"><span class="pill pill-warn">Open</span><span class="gap-title">No automated UI test coverage</span></div>
+        <p>The Python backend (model logic, agents, delivery, and assistant services) has automated test coverage; this frontend (the three — now four — static pages) does not. Not attempted yet.</p>
+      </div>
+    </section>
+
+    <section id="closed">
+      <h2 class="label">Previously found, now closed</h2>
+      <p style="margin-bottom:14px">Included for completeness — these were real bugs found and fixed during development, not hidden after the fact.</p>
+      <ul class="closed-list">
+        <li><b>Double-softmax bug:</b> applying softmax a second time to an already-finished probability output silently distorted every threshold-based number while AUC looked fine. Fixed, regression-tested.</li>
+        <li><b>Temperature-scaling bug:</b> skipping the calibration temperature broke bias-report sensitivity entirely (0.0%). Fixed.</li>
+        <li><b>Train/serve ensembling-formula mismatch:</b> the training notebook and the deployed ONNX graph used two different pooling formulas. Practical impact fixed (threshold corrected to 0.2385); the notebook itself still has both formulas, tracked in RETRAIN_PLAN.md for the next retrain.</li>
+        <li><b>Unauthenticated patient-data endpoints:</b> all six patient-data endpoints now require an API key, fail closed if unset.</li>
+        <li><b>Malignant-vs-benign AUC metric bug:</b> ranking by melanoma-score alone under-credited true BCC/AKIEC cases in a broader malignant-vs-benign comparison, making MRA-MIDAS look far worse than it was. Fixed at the source, every affected result re-run and corrected in place.</li>
+      </ul>
+      <div class="findings-note" style="padding:16px 18px; border-radius:10px; background:var(--warn-soft); color:var(--warn); font-size:13.5px; line-height:1.6; margin-top:8px">Full evidence, confidence intervals, and the complete chronological record live in <code>docs/MODEL_CARD.md</code> and <code>docs/KNOWN_GAPS.md</code> — this page summarizes both, it doesn't replace either.</div>
+    </section>
+  </main>
+</div>
+</div>
+
+<footer class="site">SkinAnalytica · Research build · <a href="docs.html">Documentation</a> · <a href="status.html">System status</a></footer>
+
+<script>
+  const links = [...document.querySelectorAll('#toc a')];
+  const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting){
+        links.forEach(a => a.classList.remove('active'));
+        const idx = sections.indexOf(e.target);
+        if (idx >= 0) links[idx].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => s && io.observe(s));
+
+  SA_AUTH.mountWidget(document.getElementById('authWidget'));
+</script>
+</body>
+</html>
