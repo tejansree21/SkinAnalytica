@@ -4,7 +4,7 @@ Runs QA on a batch — annotation conflicts, confidence scoring, clinical flags.
 Can be triggered automatically (on upload) or manually.
 """
 
-import os, json
+import os, sys, json
 import numpy as np
 import pandas as pd
 import onnxruntime as ort
@@ -13,6 +13,9 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from base_agent import BaseAgent, BASE
+
+sys.path.insert(0, os.path.join(BASE, "src"))
+from inference_utils import run_session
 
 PROD           = os.path.join(BASE, "models", "production")
 OUT_DIR        = os.path.join(BASE, "outputs", "verification_reports")
@@ -108,9 +111,7 @@ class VerificationAgent(BaseAgent):
         for fp in img_files:
             try:
                 arr    = self._preprocess(str(fp))
-                logits = self.sess.run(None, {self.inp_name: arr})[0][0]
-                exp    = np.exp(logits - logits.max())
-                probs  = exp / exp.sum()
+                probs = run_session(self.sess, self.inp_name, arr, self.T)[0]
 
                 pred_idx  = int(probs.argmax())
                 pred_cls  = UNIFIED_CLASSES[pred_idx]

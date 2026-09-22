@@ -84,7 +84,10 @@ async def email_weekly_digest(bg: BackgroundTasks, theme: str = "google"):
 
     prod    = os.path.join(BASE,"models","production")
     metrics = {}
-    mp = os.path.join(prod,"ensemble","ensemble_metrics.json")
+    # self-consistent (arithmetic-pooling) metrics -- see docs/MODEL_CARD.md
+    # finding #10; do not read ensemble_metrics.json directly, it's the
+    # superseded pre-correction file.
+    mp = os.path.join(prod,"ensemble","ensemble_metrics_selfconsistent.json")
     if os.path.exists(mp):
         with open(mp) as f: metrics = json.load(f)
 

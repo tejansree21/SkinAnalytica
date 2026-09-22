@@ -16,7 +16,12 @@ from pathlib import Path
 HF_REPO    = os.environ.get("HF_MODEL_REPO", "tejansree/skinanalytica-models")
 HF_BASE    = f"https://huggingface.co/{HF_REPO}/resolve/main"
 MODEL_DIR  = Path(os.environ.get("MODEL_DIR", "/opt/render/project/src/models/production/onnx"))
-MODE       = os.environ.get("SKINANALYTICA_MODEL_MODE", "efficientnet")
+# "full" matches SA05_api.py's default and render.yaml's deployed config --
+# every threshold in the API is calibrated against the ensemble, not
+# EfficientNet alone (see docs/MODEL_CARD.md finding #10). This also keeps
+# the default true on HuggingFace Spaces per the module docstring above,
+# which doesn't set this env var at all (see SA_Dockerfile).
+MODE       = os.environ.get("SKINANALYTICA_MODEL_MODE", "full")
 
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 INT8_DIR   = MODEL_DIR.parent / "onnx_int8"
@@ -35,14 +40,23 @@ ALL_MODELS = {
     ],
     "int8": [
         {"file": "skinanalytica_ensemble_int8.onnx",  "dir": INT8_DIR,   "size_mb": 500},
+        # fallback candidate for MODEL_MODE="int8" in api/SA05_api.py's
+        # ModelRegistry.load() -- must be present locally too, or a failed
+        # int8 download leaves nothing loadable at all.
+        {"file": "skin_efficientnetv2-s.onnx",        "dir": MODEL_DIR,  "size_mb": 76.9},
     ],
 }
 
-# Also pull ensemble JSON configs regardless of mode
+# Also pull ensemble JSON configs regardless of mode.
+# ensemble_metrics_selfconsistent.json is the one actually read at runtime
+# (api/SA05_api.py's /models, assistant/data_layer.py, delivery/*.py -- see
+# docs/MODEL_CARD.md finding #10); ensemble_metrics.json is the superseded
+# pre-correction file, kept only so old artifacts/links don't 404.
 CONFIG_FILES = [
     "ensemble_weights.json",
     "temperature.json",
     "ensemble_metrics.json",
+    "ensemble_metrics_selfconsistent.json",
 ]
 
 def download_file(url: str, dest: Path, size_mb: float):

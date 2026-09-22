@@ -13,7 +13,7 @@ services:
       - key: PYTHON_VERSION
         value: "3.11.4"
       - key: SKINANALYTICA_MODEL_MODE
-        value: efficientnet
+        value: full
       - key: SKINANALYTICA_BASE
         value: /opt/render/project/src
       - key: MODEL_DIR
@@ -22,7 +22,21 @@ services:
         value: tejansree/skinanalytica-models
       - key: SKINANALYTICA_FRONTEND_URL
         value: https://skin-analytica.vercel.app
+      # api/SA05_api.py defaults this to true as of finding #28 (shipped the
+      # ONNX-only disagreement signal over adding PyTorch to production) --
+      # explicitly pinned false HERE, overriding that default, because this
+      # service is on Render's free tier and the disagreement backbones load
+      # ~2.1GB of fp32 ONNX files on top of the ~524MB primary model, which
+      # would almost certainly OOM-crash it. See ENABLE_UNCERTAINTY's
+      # comment in api/SA05_api.py before changing this.
+      - key: SKINANALYTICA_ENABLE_UNCERTAINTY
+        value: "false"
       - key: ANTHROPIC_API_KEY
+        sync: false
+      # Gates every patient-data endpoint -- see api/SA05_api.py's
+      # require_api_key(), which fails closed (503) if this is unset.
+      # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+      - key: SKINANALYTICA_API_KEY
         sync: false
     healthCheckPath: /health
 
@@ -45,6 +59,21 @@ services:
     runtime: python
     buildCommand: pip install "fastapi==0.115.0" "uvicorn[standard]==0.30.6" "pydantic==2.7.4" "reportlab>=4.2.0" "requests>=2.32.0"
     startCommand: cd delivery && python -m uvicorn delivery_api:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.4"
+      - key: SKINANALYTICA_BASE
+        value: /opt/render/project/src
+
+  # Runs drift + proxy-fairness monitoring against real scan_results.
+  # Nothing previously scheduled this — see agents/scheduled_monitor.py.
+  - type: cron
+    name: skinanalytica-monitor
+    runtime: python
+    schedule: "0 6 * * *"  # daily at 06:00 UTC
+    buildCommand: pip install "numpy>=1.26.0"
+    startCommand: cd agents && python scheduled_monitor.py --lookback-hours 24
     plan: free
     envVars:
       - key: PYTHON_VERSION

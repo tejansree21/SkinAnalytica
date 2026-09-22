@@ -156,12 +156,77 @@ explainability:
   mc_dropout_runs: 20
 
 inference:
+  # This section is REFERENCE DOCUMENTATION, not a loaded config file — the
+  # authoritative values live in api/SA05_api.py as Python constants.
+  # tests/test_config_consistency.py fails loudly if these two ever
+  # diverge again (see docs/KNOWN_GAPS.md: the original bug this session
+  # started with was exactly this file saying 0.45 while the deployed code
+  # used 0.312). Loading this YAML at runtime was considered and rejected —
+  # it would mean adding pyyaml as a new production dependency to an
+  # already-deployed service for a problem a sync-check test solves with
+  # zero deployment risk.
+  #
+  # mel threshold must match
+  # models/production/ensemble/ensemble_metrics_selfconsistent.json
+  # ("threshold") and api/SA05_api.py MEL_THRESHOLD. Corrected 0.312 -> 0.2385
+  # earlier this session (geometric- vs arithmetic-pooling calibration
+  # mismatch), then 0.2385 -> 0.5010 on 2026-07-28 (finding #26) when
+  # config/val.csv was adopted as the new documented validation manifest
+  # under the center-crop preprocessing change — see the MEL_THRESHOLD
+  # comment in api/SA05_api.py and docs/MODEL_CARD.md finding #26 for the
+  # full story.
   thresholds:
-    mel: 0.45
+    mel: 0.5010
     bcc: 0.50
     akiec: 0.50
     default: 0.50
   confidence_floor: 0.70
+
+  # Age-conditional melanoma thresholds (api/SA05_api.py AGE_BAND_THRESHOLDS)
+  # — derived from outputs/bias_reports/threshold_ci_age_analysis.json to
+  # close the age-based sensitivity gap (27-82% at a flat threshold).
+  # Re-derived 2026-07-28 under center-crop preprocessing (finding #25) —
+  # see the comment above AGE_BAND_THRESHOLDS in api/SA05_api.py.
+  age_conditional_mel_thresholds:
+    "0-30": 0.1492
+    "30-45": 0.0728
+    "45-60": 0.1266
+    "60-75": 0.2153
+    "75+": 0.1787
+
+  # Review-band floor as a fraction of whichever mel threshold applies
+  # (api/SA05_api.py MEL_REVIEW_BAND_FACTOR) — scores in
+  # [threshold * factor, threshold) route to REVIEW_REQUIRED instead of
+  # NORMAL, catching borderline cases before image-quality instability can
+  # flip them silently.
+  review_band_factor: 0.5
+
+  # Capture-modality-conditional threshold (api/SA05_api.py
+  # TBP_MEL_THRESHOLD) — Path A from docs/MODEL_CARD.md finding #12.
+  # Dermatoscope-tuned thresholds (mel / age-conditional above) don't
+  # transfer to 3D-total-body-photography-style crops; this is the
+  # separately-derived threshold for 80% sensitivity on that population
+  # (143-malignant-case external holdout, AUC 0.6131). Selected via the
+  # /analyze `capture_mode="tbp"` parameter — never auto-detected.
+  # Confirmed UNCHANGED under 2026-07-28 center-crop preprocessing (finding
+  # #25) — SLICE-3D crops are already square, so the crop is a no-op here.
+  tbp_mel_threshold: 0.0199
+
+  # Skin-tone-conditional thresholds (api/SA05_api.py SKIN_TONE_THRESHOLDS)
+  # — from docs/MODEL_CARD.md finding #14 (MILK10k dermoscopy holdout).
+  # PROVISIONAL, far less statistically solid than age_conditional above:
+  # derived from only 13/28/18 melanoma cases per band (vs 585 for age),
+  # and finding #14 could not confirm the underlying sensitivity gap is
+  # real rather than sampling noise. Tones 0/1/5 excluded (too few
+  # melanoma cases to derive anything at all). Selected via the /analyze
+  # `skin_tone_class` parameter (0-5, MILK10k scale) — never
+  # auto-detected, and nothing in the current product wires this up yet.
+  # Re-derived 2026-07-28 under center-crop preprocessing (finding #25) —
+  # see the comment above SKIN_TONE_THRESHOLDS in api/SA05_api.py.
+  skin_tone_mel_thresholds:
+    "2": 0.0536
+    "3": 0.0627
+    "4": 0.0162
 
 research_module:
   bulk_batch_size: 64

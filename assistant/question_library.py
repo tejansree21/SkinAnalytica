@@ -39,7 +39,7 @@ QUESTION_LIBRARY = [
         "id"      : "Q06",
         "category": "data",
         "question": "What is the current ensemble MelAUC?",
-        "description": "From ensemble_metrics.json",
+        "description": "From ensemble_metrics_selfconsistent.json",
     },
     {
         "id"      : "Q07",

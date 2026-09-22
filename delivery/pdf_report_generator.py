@@ -64,7 +64,10 @@ def generate_research_report(session_name: str = "SkinAnalytica Research Report"
                               include_drift: bool = True) -> str:
     """Generate a full publication-ready research report."""
 
-    metrics  = _load_json(os.path.join(PROD, "ensemble", "ensemble_metrics.json"))
+    # self-consistent (arithmetic-pooling) metrics -- see docs/MODEL_CARD.md
+    # finding #10; do not read ensemble_metrics.json directly, it's the
+    # superseded pre-correction file.
+    metrics  = _load_json(os.path.join(PROD, "ensemble", "ensemble_metrics_selfconsistent.json"))
     weights  = _load_json(os.path.join(PROD, "ensemble", "ensemble_weights.json"))
     temp     = _load_json(os.path.join(PROD, "ensemble", "temperature.json"))
 

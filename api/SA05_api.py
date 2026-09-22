@@ -4,34 +4,53 @@ Cross-platform path detection: Windows local vs Linux (Render/HF Spaces)
 Drop-in replacement for SA05_api.py
 """
 
-import os, sys, json, uuid, logging, time
+import os, sys, json, uuid, logging, time, secrets
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import numpy as np
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from inference_utils import run_session, check_dermatoscope_likelihood, preprocess_bgr
+
 # ── Cross-platform base path ──────────────────────────────────────
 def _detect_base() -> str:
-    """Auto-detect environment and return correct base path."""
+    """
+    Auto-detect environment and return correct base path.
+
+    Branches on sys.platform first, not on path existence, because
+    os.path.exists("/app") is not a reliable Linux/container signal --
+    on at least one Windows dev machine used for this project, "/app"
+    resolves to something that exists outside any container (a Git
+    Bash/MSYS artifact), which previously made this function silently
+    resolve BASE to "/app" on Windows, so ModelRegistry.load() found zero
+    model files and /analyze 503'd regardless of MODEL_MODE. That failure
+    was masked in the test suite because tests/conftest.py explicitly sets
+    SKINANALYTICA_BASE, so it only showed up running the API directly.
+    """
     # 1. Explicit env var always wins
     if os.environ.get("SKINANALYTICA_BASE"):
         return os.environ["SKINANALYTICA_BASE"]
-    # 2. Render / Linux deployment
-    if os.path.exists("/app"):
-        return "/app"
-    # 3. HuggingFace Spaces
-    if os.path.exists("/home/user/app"):
-        return "/home/user/app"
-    # 4. Windows local dev
-    win_path = r"C:\Users\tejan\OneDrive\Desktop\drive\SkinAnalytica"
-    if os.path.exists(win_path):
-        return win_path
-    # 5. Current directory fallback
+
+    if sys.platform == "win32":
+        # 2. Windows local dev
+        win_path = r"C:\Users\tejan\OneDrive\Desktop\drive\SkinAnalytica"
+        if os.path.exists(win_path):
+            return win_path
+    else:
+        # 2. Render / Linux deployment
+        if os.path.exists("/app"):
+            return "/app"
+        # 3. HuggingFace Spaces
+        if os.path.exists("/home/user/app"):
+            return "/home/user/app"
+
+    # 4. Current directory fallback
     return str(Path(__file__).parent)
 
 BASE    = _detect_base()
@@ -39,13 +58,102 @@ PROD    = os.path.join(BASE, "models", "production")
 OUT_DIR = os.path.join(BASE, "outputs")
 
 # ── Model mode ────────────────────────────────────────────────────
-MODEL_MODE = os.environ.get("SKINANALYTICA_MODEL_MODE", "efficientnet")
+# "full" loads the 3-model ensemble (int8, falling back to fp32, falling
+# back to EfficientNet-alone if neither ONNX file is present) -- this is
+# the mode every threshold/calibration constant below (MEL_THRESHOLD,
+# AGE_BAND_THRESHOLDS, the 0.4095 temperature) was actually derived
+# against (see docs/MODEL_CARD.md finding #10). Do not default this back
+# to "efficientnet": that mode serves a single backbone whose own natural
+# operating threshold differs from the ensemble-calibrated ones used here,
+# so specificity/sensitivity in production would silently stop matching
+# anything documented in the model card.
+MODEL_MODE = os.environ.get("SKINANALYTICA_MODEL_MODE", "full")
+
+# Inter-model disagreement as an uncertainty signal (prototyped earlier this
+# session as a cheap ONNX-only alternative to MC-dropout — no PyTorch needed
+# in production).
+#
+# DECIDED 2026-07-28 (docs/MODEL_CARD.md finding #28): ship this over adding
+# PyTorch to production. MC-dropout is the "correct" method, but on the one
+# real false-negative case tested, BOTH approaches failed identically (all 3
+# backbones agreed confidently and were all wrong) — so the heavier option
+# doesn't demonstrably buy more protection against the failure people
+# actually worry about, while committing real infra cost. This signal is
+# still useful for the different, real case of backbones genuinely
+# disagreeing, so it ships as the default rather than staying an unused
+# opt-in flag.
+#
+# Default ON here -- but the actual deployed skinanalytica-api service
+# (render.yaml) explicitly PINS THIS FALSE, overriding the default. Reason:
+# _load_disagreement_backbones() loads the fp32 individual backbone files
+# (ViT-L alone is ~1.2GB, ConvNeXt-Large ~785MB, EfficientNetV2-S ~81MB --
+# ~2.1GB combined) IN ADDITION to whatever MODEL_MODE already loads (the
+# int8 ensemble, ~524MB, in "full" mode's first candidate) -- a ~2.6GB+
+# total footprint that would almost certainly OOM-crash Render's free tier.
+# Turning this on for real on that service would need either a larger Render
+# plan or switching _load_disagreement_backbones() to the existing int8
+# backbone files (onnx_int8/, ~523MB combined) -- neither done here; this
+# default change is for local dev and any future adequately-provisioned
+# deployment, not a silent change to the live constrained one.
+#
+# Known limitation either way, tested this session (see docs/MODEL_CARD.md
+# finding #7): on the one real false-negative case tried, all 3 backbones
+# agreed confidently and were all wrong — this signal will NOT catch that
+# class of error. It's still useful for cases where backbones genuinely
+# disagree, just not a safety net for confidently-wrong-in-unison mistakes.
+ENABLE_UNCERTAINTY = os.environ.get("SKINANALYTICA_ENABLE_UNCERTAINTY", "true").lower() == "true"
+
+# ── Auth ──────────────────────────────────────────────────────────
+# GET /report/{scan_id}, /report/{scan_id}/fhir, and
+# /patient/{patient_id}/history were previously unauthenticated --
+# /patient/{patient_id}/history would return a patient's full scan history
+# to anyone who knew or guessed an id, with no credential required at all.
+# This was the top-priority item flagged across two independent audit
+# passes; gated here.
+#
+# Deliberately fails CLOSED, not open: if SKINANALYTICA_API_KEY is unset,
+# every protected request is rejected (503) rather than silently allowed
+# through. The opposite behavior -- a misconfigured deploy quietly running
+# with no auth at all -- is exactly the gap this is meant to close, and a
+# fail-open design would let that happen again silently, the same failure
+# shape as MODEL_MODE's old wrong default (see docs/MODEL_CARD.md finding
+# #10) and _detect_base()'s old fragile path check.
+#
+# UPDATE (2026-07-27): /analyze, /analyze/batch, and /audit/log are now
+# gated too. The original reasoning for leaving them open was real -- the
+# old frontend called them directly from browser JS with no way to hold a
+# server secret client-side, and embedding SKINANALYTICA_API_KEY in public
+# page source would have been fake security, not real protection. The new
+# frontend (index.html/docs.html/status.html) resolves this the way
+# Swagger's own "Authorize" flow does: the API key is a CLIENT-SUPPLIED
+# credential the user types in and the browser holds in localStorage for
+# that browser only -- never shipped in page source, never a secret this
+# codebase owns or embeds. See the key-entry UI in index.html/status.html.
+# A misconfigured deploy still fails closed exactly as below.
+API_KEY = os.environ.get("SKINANALYTICA_API_KEY")
+
+async def require_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
+    """FastAPI dependency gating every patient-data endpoint (analyze,
+    analyze/batch, report, fhir, patient history, audit log) -- see the
+    scope note above for the history of why some of these were exempted
+    and how that got closed. Uses secrets.compare_digest for a
+    timing-safe comparison rather than `==` -- naive string equality on a
+    secret is a real (if narrow) side-channel, and there's no reason to
+    accept that risk when the fix is free."""
+    if not API_KEY:
+        raise HTTPException(503, "Server misconfigured: SKINANALYTICA_API_KEY not set")
+    if not x_api_key or not secrets.compare_digest(x_api_key, API_KEY):
+        raise HTTPException(401, "Missing or invalid API key (X-API-Key header required)")
 
 # ── Allowed origins ───────────────────────────────────────────────
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:8001",
     "http://127.0.0.1:8001",
+    # New static frontend (index.html/docs.html/status.html), served via
+    # `python -m http.server 8080` in local dev -- see .claude/launch.json.
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
     # Vercel — all variants
     "https://skinanalytica.vercel.app",
     "https://skin-analytica.vercel.app",
@@ -99,10 +207,6 @@ NCCN = {
     "df":    ["No treatment required","Excision if symptomatic or uncertain diagnosis"],
     "vasc":  ["Dermatology review","Laser therapy if cosmetically concerning","Rule out angiosarcoma in elderly patients"],
 }
-IMAGENET_MEAN = np.array([0.485,0.456,0.406], dtype=np.float32)
-IMAGENET_STD  = np.array([0.229,0.224,0.225], dtype=np.float32)
-IMG_SIZE      = 224
-
 # ── Model registry ────────────────────────────────────────────────
 class ModelRegistry:
     def __init__(self):
@@ -172,52 +276,79 @@ class ModelRegistry:
         else:
             logger.error("No ONNX model loaded — /analyze will return 503")
 
+        self.disagreement_sessions = {}
+        if ENABLE_UNCERTAINTY:
+            self._load_disagreement_backbones()
+
+    def _load_disagreement_backbones(self):
+        import onnxruntime as ort
+        onnx_dir = os.path.join(PROD, "onnx")
+        backbones = {
+            "efficientnetv2-s": "skin_efficientnetv2-s.onnx",
+            "vit-large-patch16-224": "skin_vit-large-patch16-224.onnx",
+            "convnext-large": "skin_convnext-large.onnx",
+        }
+        for name, fname in backbones.items():
+            path = os.path.join(onnx_dir, fname)
+            if not os.path.exists(path):
+                logger.warning(f"Uncertainty backbone missing, skipping: {fname}")
+                continue
+            try:
+                sess = ort.InferenceSession(path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+                self.disagreement_sessions[name] = sess
+            except Exception as e:
+                logger.warning(f"Could not load uncertainty backbone {fname}: {e}")
+        if self.disagreement_sessions:
+            logger.info(f"Uncertainty signal enabled: {len(self.disagreement_sessions)} backbones loaded")
+
     def predict(self, arr: np.ndarray) -> np.ndarray:
         if not self.session:
             raise RuntimeError("No model loaded")
-        logits = self.session.run(None, {self.inp_name: arr})[0]
-        logits = logits / self.temperature
-        exp    = np.exp(logits - logits.max(axis=1, keepdims=True))
-        return exp / exp.sum(axis=1, keepdims=True)
+        return run_session(self.session, self.inp_name, arr, self.temperature)
+
+    def predict_disagreement(self, arr: np.ndarray) -> Optional[float]:
+        """Std of mel_score across the 3 individual backbones — an uncertainty
+        proxy that doesn't need MC-dropout/PyTorch. Returns None if disabled
+        or backbones failed to load. See ENABLE_UNCERTAINTY's docstring for
+        this signal's known blind spot."""
+        if not self.disagreement_sessions:
+            return None
+        mel_scores = []
+        for sess in self.disagreement_sessions.values():
+            inp_name = sess.get_inputs()[0].name
+            probs = run_session(sess, inp_name, arr, self.temperature)
+            mel_scores.append(float(probs[0][0]))
+        return float(np.std(mel_scores))
 
 model_reg = ModelRegistry()
 
 # ── Preprocessing ─────────────────────────────────────────────────
 def preprocess(img_bytes: bytes) -> np.ndarray:
+    """Decode + delegate to inference_utils.preprocess_bgr(), the single
+    source of truth for hair-removal/center-crop/resize/normalize -- this
+    used to duplicate that logic inline, which is exactly the kind of
+    per-call-site drift the module docstring on inference_utils.py warns
+    against. Picks up the 2026-07-28 center-crop change automatically."""
     import cv2
     arr = np.frombuffer(img_bytes, np.uint8)
     img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
     if img is None:
         raise ValueError("Could not decode image")
-    gray   = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (17,17))
-    bhat   = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
-    _,thr  = cv2.threshold(bhat, 10, 255, cv2.THRESH_BINARY)
-    img    = cv2.inpaint(img, thr, 1, cv2.INPAINT_TELEA)
-    img    = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img    = cv2.resize(img, (IMG_SIZE,IMG_SIZE)).astype(np.float32)/255.0
-    img    = (img - IMAGENET_MEAN) / IMAGENET_STD
-    return img.transpose(2,0,1)[None].astype(np.float32)
+    return preprocess_bgr(img)
 
-# ── Verdict logic ─────────────────────────────────────────────────
-CANCER_CLASSES  = {"mel","bcc","akiec"}
-REVIEW_CLASSES  = {"vasc"}
-MEL_THRESHOLD   = 0.312
+# -- Verdict logic --------------------------------------------------
+# Single source of truth: src/verdict_logic.py (docs/MODEL_CARD.md finding
+# #29) -- this used to be a ~210-line inline block duplicated (and once
+# already silently desynced, finding #27) in scripts/evaluate_fusion.py.
+# Every threshold/routing constant below is re-exported here unchanged so
+# existing call sites (api.MEL_THRESHOLD, api.get_mel_threshold(...),
+# api.make_verdict(...), etc.) keep working without modification.
+from verdict_logic import (
+    CANCER_CLASSES, REVIEW_CLASSES, MEL_THRESHOLD, MEL_REVIEW_BAND_FACTOR,
+    AGE_BAND_THRESHOLDS, TBP_MEL_THRESHOLD, SKIN_TONE_THRESHOLDS,
+    get_mel_threshold, make_verdict,
+)
 
-def make_verdict(probs: np.ndarray, pred_class: str) -> dict:
-    mel_score  = float(probs[0])
-    confidence = float(probs.max())
-    if pred_class in CANCER_CLASSES or mel_score >= MEL_THRESHOLD:
-        verdict  = "CANCER_FLAGGED"
-        priority = 1 if pred_class == "mel" or mel_score > 0.6 else 2
-    elif pred_class in REVIEW_CLASSES or confidence < 0.65:
-        verdict  = "REVIEW_REQUIRED"
-        priority = 3
-    else:
-        verdict  = "NORMAL"
-        priority = 4
-    return {"verdict":verdict,"priority":priority,
-            "confidence":confidence,"mel_score":mel_score}
 
 # ── Persistence ───────────────────────────────────────────────────
 OUT_SCANS = os.path.join(OUT_DIR, "scan_results")
@@ -258,7 +389,10 @@ async def health():
 
 @app.get("/models")
 async def models_info():
-    metrics_path = os.path.join(PROD, "ensemble", "ensemble_metrics.json")
+    # self-consistent (arithmetic-pooling) metrics -- matches the deployed
+    # ensemble's actual math, not the originally-published geometric-pooling
+    # numbers in ensemble_metrics.json. See docs/MODEL_CARD.md finding #10.
+    metrics_path = os.path.join(PROD, "ensemble", "ensemble_metrics_selfconsistent.json")
     metrics = {}
     if os.path.exists(metrics_path):
         with open(metrics_path) as f:
@@ -272,13 +406,20 @@ async def models_info():
         "loaded"    : model_reg.loaded,
     }
 
-@app.post("/analyze")
+@app.post("/analyze", dependencies=[Depends(require_api_key)])
 async def analyze(
     file        : UploadFile = File(...),
     cancer_type : Optional[str] = None,
     patient_id  : Optional[str] = None,
     patient_age : Optional[int] = None,
     patient_sex : Optional[str] = None,
+    capture_mode: Optional[str] = None,  # "tbp" for 3D-total-body-photography-style
+                                          # crops -- see TBP_MEL_THRESHOLD. Defaults to
+                                          # the standard dermatoscope-calibrated
+                                          # thresholds when omitted.
+    skin_tone_class: Optional[int] = None,  # 0-5 (MILK10k scale), only used if in
+                                             # SKIN_TONE_THRESHOLDS (2/3/4) -- provisional,
+                                             # see its comment. Omit to use age/global.
 ):
     if not model_reg.loaded:
         raise HTTPException(503, "Model not loaded — check startup logs")
@@ -293,6 +434,22 @@ async def analyze(
     except Exception as e:
         raise HTTPException(400, f"Image preprocessing failed: {e}")
 
+    # Non-dermoscopic-input guardrail (see check_dermatoscope_likelihood's
+    # docstring for what this is and isn't -- an advisory heuristic, never
+    # a hard gate). Decodes the raw bytes a second time deliberately,
+    # rather than threading the array out of preprocess(), to avoid
+    # touching that function's existing contract/tests for a check that
+    # can fail open safely.
+    image_type_check = None
+    try:
+        import cv2
+        raw_arr = np.frombuffer(img_bytes, np.uint8)
+        raw_img = cv2.imdecode(raw_arr, cv2.IMREAD_COLOR)
+        if raw_img is not None:
+            image_type_check = check_dermatoscope_likelihood(raw_img)
+    except Exception as e:
+        logger.warning(f"Dermatoscope-likelihood check failed (non-fatal): {e}")
+
     try:
         probs = model_reg.predict(arr)[0]
     except Exception as e:
@@ -300,8 +457,17 @@ async def analyze(
 
     pred_idx   = int(probs.argmax())
     pred_class = UNIFIED_CLASSES[pred_idx]
-    decision   = make_verdict(probs, pred_class)
+    decision   = make_verdict(probs, pred_class, patient_age=patient_age, capture_mode=capture_mode,
+                               skin_tone_class=skin_tone_class)
     scan_id    = str(uuid.uuid4())[:8]
+
+    disagreement = None
+    if ENABLE_UNCERTAINTY:
+        try:
+            disagreement = model_reg.predict_disagreement(arr)
+        except Exception as e:
+            logger.warning(f"Disagreement computation failed: {e}")
+
     latency_ms = int((time.time() - t0) * 1000)
 
     result = {
@@ -312,6 +478,8 @@ async def analyze(
         "pred_class_full": CLASS_FULL[pred_class],
         "confidence"    : round(decision["confidence"], 4),
         "mel_score"     : round(decision["mel_score"], 4),
+        "mel_threshold_used": decision["mel_threshold_used"],
+        "uncertainty_std": round(disagreement, 4) if disagreement is not None else None,
         "cancer_prob"   : round(float(probs[0]), 4),
         "icd10"         : ICD10.get(pred_class, "L98.9"),
         "snomed"        : SNOMED.get(pred_class),
@@ -324,11 +492,16 @@ async def analyze(
         "latency_ms"    : latency_ms,
         "timestamp"     : datetime.now().isoformat(),
         "patient_id"    : patient_id,
+        "patient_age"   : patient_age,
+        "patient_sex"   : patient_sex,
+        "capture_mode"  : capture_mode,
+        "skin_tone_class": skin_tone_class,
+        "image_type_check": image_type_check,
     }
     _save_scan(result)
     return result
 
-@app.post("/analyze/batch")
+@app.post("/analyze/batch", dependencies=[Depends(require_api_key)])
 async def analyze_batch(files: List[UploadFile] = File(...)):
     if not model_reg.loaded:
         raise HTTPException(503, "Model not loaded")
@@ -363,7 +536,7 @@ async def analyze_batch(files: List[UploadFile] = File(...)):
             "review_count":review,"results":results,
             "timestamp":datetime.now().isoformat()}
 
-@app.get("/report/{scan_id}")
+@app.get("/report/{scan_id}", dependencies=[Depends(require_api_key)])
 async def get_report(scan_id: str):
     path = os.path.join(OUT_SCANS, f"{scan_id}.json")
     if not os.path.exists(path):
@@ -371,7 +544,7 @@ async def get_report(scan_id: str):
     with open(path, encoding="utf-8") as f:
         return json.load(f)
 
-@app.get("/report/{scan_id}/fhir")
+@app.get("/report/{scan_id}/fhir", dependencies=[Depends(require_api_key)])
 async def fhir_export(scan_id: str):
     path = os.path.join(OUT_SCANS, f"{scan_id}.json")
     if not os.path.exists(path):
@@ -396,7 +569,7 @@ async def fhir_export(scan_id: str):
         }],
     }
 
-@app.get("/patient/{patient_id}/history")
+@app.get("/patient/{patient_id}/history", dependencies=[Depends(require_api_key)])
 async def patient_history(patient_id: str):
     scans = []
     if os.path.exists(OUT_SCANS):
@@ -425,7 +598,7 @@ async def list_sessions():
         })
     return {"sessions":sessions,"count":len(sessions)}
 
-@app.get("/audit/log")
+@app.get("/audit/log", dependencies=[Depends(require_api_key)])
 async def audit_log(limit: int = 50):
     scans = []
     if os.path.exists(OUT_SCANS):

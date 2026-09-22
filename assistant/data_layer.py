@@ -64,14 +64,17 @@ def get_melanoma_flagged_count(days_back: int = 7) -> dict:
 
 # ── Q02: False negative rate from last batch ─────────────────────
 def get_last_batch_fnr() -> dict:
-    metrics_path = os.path.join(PROD, "ensemble", "ensemble_metrics.json")
+    # self-consistent (arithmetic-pooling) metrics -- see docs/MODEL_CARD.md
+    # finding #10; do not read ensemble_metrics.json directly, it's the
+    # superseded pre-correction file.
+    metrics_path = os.path.join(PROD, "ensemble", "ensemble_metrics_selfconsistent.json")
     if os.path.exists(metrics_path):
         with open(metrics_path) as f:
             m = json.load(f)
         return {
             "fnr"        : m.get("fnr"),
             "sensitivity": m.get("sensitivity"),
-            "source"     : "ensemble_metrics",
+            "source"     : "ensemble_metrics_selfconsistent",
         }
     ver = _load_latest(os.path.join(OUTPUTS, "verification_reports"))
     if ver:
@@ -126,9 +129,12 @@ def get_low_confidence_rate() -> dict:
 
 # ── Q06: Current ensemble metrics ────────────────────────────────
 def get_ensemble_metrics() -> dict:
-    path = os.path.join(PROD, "ensemble", "ensemble_metrics.json")
+    # self-consistent (arithmetic-pooling) metrics -- see docs/MODEL_CARD.md
+    # finding #10; do not read ensemble_metrics.json directly, it's the
+    # superseded pre-correction file.
+    path = os.path.join(PROD, "ensemble", "ensemble_metrics_selfconsistent.json")
     if not os.path.exists(path):
-        return {"note": "ensemble_metrics.json not found — run SA02"}
+        return {"note": "ensemble_metrics_selfconsistent.json not found — run SA02"}
     with open(path) as f:
         return json.load(f)
 
