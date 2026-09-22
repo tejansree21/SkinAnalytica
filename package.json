@@ -1,0 +1,8 @@
+{
+  "name": "skinanalytica-frontend-tests",
+  "private": true,
+  "description": "Test runner entry for tests_js/ -- no dependencies (Node's built-in test runner + a hand-rolled DOM stub, see tests_js/dom_stub.js). Not a build for the static frontend itself, which ships as plain HTML/CSS/JS with no bundler.",
+  "scripts": {
+    "test": "node --test tests_js/test_*.js"
+  }
+}
