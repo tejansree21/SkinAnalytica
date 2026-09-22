@@ -1,4 +1,3 @@
-﻿@"
 # Large files — never commit
 models/
 data/
@@ -16,5 +15,8 @@ __pycache__/
 .env
 *.egg-info/
 .DS_Store
-"@ | Out-File -Encoding utf8 .gitignore
 hf_env_vars.txt
+
+# Test artifacts
+.pytest_cache/
+.coverage
